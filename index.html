@@ -7,13 +7,31 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Ledger" />
   <meta name="theme-color" content="#F5F3EE" />
-  <title>Ledger — Teaching Schedule</title>
+  <meta name="description" content="Teaching ledger: schedule, students, payments." />
+  <title>Ledger</title>
+  
+  <!-- PWA manifest for standalone mode -->
+  <link rel="manifest" href="data:application/json,{
+    &quot;name&quot;: &quot;Ledger&quot;,
+    &quot;short_name&quot;: &quot;Ledger&quot;,
+    &quot;description&quot;: &quot;Teaching ledger&quot;,
+    &quot;start_url&quot;: &quot;/&quot;,
+    &quot;display&quot;: &quot;standalone&quot;,
+    &quot;background_color&quot;: &quot;#F5F3EE&quot;,
+    &quot;theme_color&quot;: &quot;#F5F3EE&quot;,
+    &quot;icons&quot;: [
+      { &quot;src&quot;: &quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231A1E1C'/%3E%3Crect x='24' y='30' width='38' height='12' rx='6' fill='%23F5F3EE'/%3E%3Crect x='24' y='49' width='30' height='12' rx='6' fill='%23F5F3EE'/%3E%3Crect x='24' y='68' width='20' height='12' rx='6' fill='%23F5F3EE'/%3E%3C/svg%3E&quot;, &quot;sizes&quot;: &quot;100x100&quot;, &quot;type&quot;: &quot;image/svg+xml&quot; }
+    ]
+  }" />
+  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600&display=swap" rel="stylesheet">
+  
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
@@ -31,6 +49,8 @@
       --radius: 20px;
       --radius-sm: 12px;
       --shadow: 0 2px 12px rgba(0,0,0,0.04);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-top: env(safe-area-inset-top, 0px);
     }
     html, body {
       background: var(--bg);
@@ -38,12 +58,31 @@
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       -webkit-tap-highlight-color: transparent;
       overscroll-behavior-y: none;
-      min-height: 100vh;
-      min-height: -webkit-fill-available;
-      padding-bottom: env(safe-area-inset-bottom);
+      height: 100%;
+      height: 100vh;
+      height: -webkit-fill-available;
+      width: 100%;
+      overflow: hidden;
       font-size: 16px;
       line-height: 1.5;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
     }
+    
+    #root {
+      height: 100%;
+      height: 100vh;
+      height: -webkit-fill-available;
+      width: 100%;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+    }
+
     .serif { font-family: 'Newsreader', Georgia, serif; }
     .tabular { font-variant-numeric: tabular-nums; }
     ::-webkit-scrollbar { display: none; }
@@ -104,12 +143,6 @@
       color: var(--text);
       border: 1.5px solid var(--border-strong);
     }
-    .btn-ghost {
-      background: transparent;
-      color: var(--text-secondary);
-      padding: 8px 12px;
-      min-height: 40px;
-    }
     .btn-danger {
       background: transparent;
       color: var(--danger);
@@ -135,11 +168,12 @@
     @media (prefers-reduced-motion: reduce) { .modal-enter, .fade-enter { animation: none; } }
 
     .bottom-nav {
-      padding-bottom: env(safe-area-inset-bottom, 10px);
+      padding-bottom: max(env(safe-area-inset-bottom), 10px);
       background: var(--surface);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border-top: 1.5px solid var(--border);
+      flex-shrink: 0;
     }
     .nav-btn {
       font-size: 14px;
@@ -197,12 +231,26 @@
       letter-spacing: 0.01em;
     }
 
+    .scroll-area {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 8px;
+    }
+
+    .scroll-area-padded {
+      padding-left: 20px;
+      padding-right: 20px;
+      padding-bottom: 8px;
+    }
+
     .w-full { width: 100%; }
     .max-w-md { max-width: 480px; margin-left: auto; margin-right: auto; }
-    .min-h-screen { min-height: 100vh; min-height: -webkit-fill-available; }
     .flex { display: flex; }
     .flex-col { flex-direction: column; }
     .flex-1 { flex: 1; }
+    .flex-shrink-0 { flex-shrink: 0; }
     .items-center { align-items: center; }
     .items-start { align-items: flex-start; }
     .justify-between { justify-content: space-between; }
@@ -222,10 +270,8 @@
     .mb-6 { margin-bottom: 24px; }
     .px-4 { padding-left: 16px; padding-right: 16px; }
     .px-5 { padding-left: 20px; padding-right: 20px; }
-    .py-1 { padding-top: 4px; padding-bottom: 4px; }
     .pt-3 { padding-top: 12px; }
     .pt-4 { padding-top: 16px; }
-    .pb-20 { padding-bottom: 80px; }
     .text-center { text-align: center; }
     .text-right { text-align: right; }
     .text-secondary { color: var(--text-secondary); }
@@ -237,22 +283,61 @@
     .leading-none { line-height: 1.1; }
     .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .shrink-0 { flex-shrink: 0; }
-    .sticky { position: sticky; top: 0; z-index: 10; background: var(--bg); }
-    .fixed { position: fixed; }
-    .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
-    .bottom-0 { bottom: 0; }
-    .left-0 { left: 0; }
-    .right-0 { right: 0; }
-    .z-20 { z-index: 20; }
-    .z-30 { z-index: 30; }
     .border { border-width: 1.5px; border-style: solid; }
     .border-dashed { border-style: dashed; }
-    .border-transparent { border-color: transparent; }
     .rounded-xl { border-radius: var(--radius); }
     .rounded-full { border-radius: 9999px; }
     .bg-surface { background: var(--surface); }
     .bg-accent { background: var(--accent); color: white; }
-    .text-accent { color: var(--accent); }
+
+    /* Modal overlay */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: flex;
+      align-items: flex-end;
+      background: rgba(0,0,0,0.25);
+    }
+    .modal-content {
+      width: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+      border-radius: 24px 24px 0 0;
+      background: var(--bg);
+      max-height: 88vh;
+      overflow-y: auto;
+      padding-bottom: max(env(safe-area-inset-bottom), 8px);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 40;
+      padding: 10px 24px;
+      border-radius: 60px;
+      background: var(--text);
+      color: white;
+      font-size: 14px;
+      max-width: 90%;
+      text-align: center;
+    }
+
+    /* Header */
+    .app-header {
+      padding: 12px 20px 4px;
+      flex-shrink: 0;
+      padding-top: max(env(safe-area-inset-top), 12px);
+    }
+
+    @media (display-mode: standalone) {
+      .app-header {
+        padding-top: 8px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -262,7 +347,7 @@
 const { useState, useEffect, useCallback, useMemo, useRef } = React;
 
 // ========== DATA ==========
-const STORAGE_KEY = 'ledger-react-v2';
+const STORAGE_KEY = 'ledger-react-v3';
 
 function loadData() {
   try {
@@ -389,10 +474,18 @@ function App() {
   const [openStudentId, setOpenStudentId] = useState(null);
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState(null);
+  const scrollRef = useRef(null);
 
   useEffect(() => {
     saveData(data);
   }, [data]);
+
+  // Reset scroll position when view changes
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = 0;
+    }
+  }, [view, openStudentId, weekOffset]);
 
   const showToast = useCallback((msg) => {
     setToast(msg);
@@ -539,15 +632,13 @@ function App() {
     ];
     const active = view === 'student' ? 'students' : view;
     return (
-      <div className="fixed bottom-0 left-0 right-0 z-20 bottom-nav">
-        <div className="max-w-md mx-auto flex">
-          {tabs.map(t => (
-            <button key={t.id} onClick={() => navigateTo(t.id)} 
-              className={`nav-btn ${active === t.id ? 'active' : ''}`}>
-              {t.label}
-            </button>
-          ))}
-        </div>
+      <div className="bottom-nav flex">
+        {tabs.map(t => (
+          <button key={t.id} onClick={() => navigateTo(t.id)} 
+            className={`nav-btn ${active === t.id ? 'active' : ''}`}>
+            {t.label}
+          </button>
+        ))}
       </div>
     );
   };
@@ -579,7 +670,7 @@ function App() {
     const sessions = data.sessions.filter(s => s.date === today).sort((a, b) => a.time.localeCompare(b.time));
 
     return (
-      <>
+      <div className="scroll-area-padded">
         {renderStats()}
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium text-secondary">Today's sessions</span>
@@ -598,7 +689,7 @@ function App() {
             {sessions.map(s => <SessionRow key={s.id} data={data} session={s} onOpen={() => openModal(<SessionModal data={data} session={s} onUpdate={updateSession} onDelete={deleteSession} onClose={closeModal} />)} />)}
           </div>
         )}
-      </>
+      </div>
     );
   };
 
@@ -607,7 +698,7 @@ function App() {
     const days = Array.from({ length: 7 }, (_, i) => addDays(base, i));
 
     return (
-      <>
+      <div className="scroll-area-padded">
         <div className="flex items-center justify-between mb-4">
           <button onClick={() => setWeekOffset(w => w - 1)} className="press text-2xl px-3 text-secondary">←</button>
           <div className="text-sm font-medium">
@@ -641,7 +732,7 @@ function App() {
         })}
         <button onClick={() => openModal(<AddSessionModal data={data} onAdd={addSession} onClose={closeModal} />)} 
           className="btn btn-outline w-full mt-2">+ Add session</button>
-      </>
+      </div>
     );
   };
 
@@ -649,16 +740,18 @@ function App() {
     const students = [...data.students].sort((a, b) => a.name.localeCompare(b.name));
     if (!students.length) {
       return (
-        <div className="card border-dashed py-8 text-center">
-          <p className="serif text-lg mb-1">No students yet</p>
-          <p className="text-sm text-secondary mb-3">Add your first student</p>
-          <button onClick={() => openModal(<AddStudentModal onAdd={addStudent} onClose={closeModal} />)} 
-            className="btn">+ Add student</button>
+        <div className="scroll-area-padded">
+          <div className="card border-dashed py-8 text-center">
+            <p className="serif text-lg mb-1">No students yet</p>
+            <p className="text-sm text-secondary mb-3">Add your first student</p>
+            <button onClick={() => openModal(<AddStudentModal onAdd={addStudent} onClose={closeModal} />)} 
+              className="btn">+ Add student</button>
+          </div>
         </div>
       );
     }
     return (
-      <>
+      <div className="scroll-area-padded">
         <div className="space-y-2 mb-3">
           {students.map(s => {
             const bal = studentBalance(data, s.id);
@@ -680,7 +773,7 @@ function App() {
         </div>
         <button onClick={() => openModal(<AddStudentModal onAdd={addStudent} onClose={closeModal} />)} 
           className="btn btn-outline w-full">+ Add student</button>
-      </>
+      </div>
     );
   };
 
@@ -693,7 +786,7 @@ function App() {
     const notes = s.generalNotes || [];
 
     return (
-      <>
+      <div className="scroll-area-padded">
         <div className="mb-4">
           <h2 className="serif text-2xl leading-none mb-1">{s.name}</h2>
           <p className="text-sm text-secondary">{fmtMoney(s.rate)}/hr{s.phone ? ' · ' + s.phone : ''}</p>
@@ -762,7 +855,7 @@ function App() {
             </div>
           )}
         </div>
-      </>
+      </div>
     );
   };
 
@@ -772,7 +865,7 @@ function App() {
     const allPayments = [...data.payments].sort((a, b) => b.date.localeCompare(a.date));
 
     return (
-      <>
+      <div className="scroll-area-padded">
         {owing.length > 0 && (
           <div className="mb-4">
             <span className="text-sm font-medium text-secondary">Outstanding</span>
@@ -818,7 +911,7 @@ function App() {
               className="btn btn-outline w-full mt-3">+ Log payment</button>
           </>
         )}
-      </>
+      </div>
     );
   };
 
@@ -831,21 +924,23 @@ function App() {
   else body = renderToday();
 
   return (
-    <div className="max-w-md min-h-screen flex flex-col relative pb-20">
-      <div className="px-5 pt-4 pb-1">{renderHeader()}</div>
-      <div className="flex-1 px-5 pb-4 fade-enter">{body}</div>
+    <div className="flex flex-col" style={{ height: '100%', height: '100vh', height: '-webkit-fill-available' }}>
+      <div className="app-header">{renderHeader()}</div>
+      <div ref={scrollRef} className="scroll-area">
+        {body}
+      </div>
       {renderTabBar()}
+      
       {modal && (
-        <div className="fixed inset-0 z-30 flex items-end fade-enter" style={{ background: 'rgba(0,0,0,0.25)' }}>
-          <div className="modal-enter w-full max-w-md mx-auto rounded-t-2xl max-h-[88vh] overflow-y-auto" 
-            style={{ background: 'var(--bg)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             {modal}
           </div>
         </div>
       )}
+      
       {toast && (
-        <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-40 px-5 py-2.5 rounded-full" 
-          style={{ background: 'var(--text)', color: 'white', fontSize: 14 }}>
+        <div className="toast">
           {toast}
         </div>
       )}
