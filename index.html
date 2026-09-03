@@ -25,12 +25,6 @@
       --ink-soft: #5B6360;
       --hairline: #DBDACF;
       --hairline-strong: #C7C6B9;
-      --maths: #2B5FAD;
-      --physics: #7A4FB5;
-      --english: #B8862E;
-      --piano: #2F7A5E;
-      --percussion: #C4542D;
-      --other: #6B6B63;
       --danger: #A33D3D;
       --radius: 24px;
       --shadow-sm: 0 4px 12px rgba(0,0,0,0.02), 0 2px 4px rgba(0,0,0,0.03);
@@ -50,10 +44,8 @@
     .serif { font-family: 'Newsreader', Georgia, serif; }
     .tabular { font-variant-numeric: tabular-nums; }
     ::-webkit-scrollbar { display: none; }
-    .hairline { border-color: var(--hairline); }
     .press:active { transform: scale(0.96); opacity: 0.7; transition: 0.06s; }
 
-    /* cards & inputs */
     input, textarea, select {
       background: var(--paper-raised);
       border: 1px solid var(--hairline-strong);
@@ -84,17 +76,7 @@
       border: 1px solid var(--hairline);
       border-radius: var(--radius);
       padding: 20px 18px;
-      transition: 0.1s ease;
       box-shadow: var(--shadow-sm);
-    }
-    .card-flat { background: transparent; border: 1px solid var(--hairline); }
-    .chip {
-      display: inline-block;
-      font-size: 13px;
-      padding: 6px 14px;
-      border-radius: 40px;
-      font-weight: 500;
-      letter-spacing: 0.01em;
     }
     .btn {
       display: inline-flex;
@@ -119,14 +101,12 @@
     }
     .btn-danger { background: transparent; color: var(--danger); border: 1.5px solid var(--danger); }
 
-    /* modal */
     .modal-enter { animation: slideUp .28s cubic-bezier(0.16, 1, 0.3, 1); }
     @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     .fade-enter { animation: fadeIn .2s ease; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     @media (prefers-reduced-motion: reduce) { .modal-enter, .fade-enter { animation: none; } }
 
-    /* bottom nav */
     .bottom-nav {
       padding-bottom: env(safe-area-inset-bottom, 12px);
       background: var(--paper-raised);
@@ -146,7 +126,6 @@
     }
     .nav-btn:active { opacity: 0.6; }
 
-    /* stats */
     .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
     .stat-card {
       padding: 18px 14px;
@@ -155,7 +134,6 @@
       border: 1px solid var(--hairline);
     }
 
-    /* session row */
     .session-row {
       background: var(--paper-raised);
       border: 1px solid var(--hairline);
@@ -165,9 +143,6 @@
       align-items: center;
       gap: 16px;
     }
-    .session-row .dot { width: 5px; align-self: stretch; border-radius: 8px; flex-shrink: 0; }
-
-    /* student item */
     .student-item {
       background: var(--paper-raised);
       border: 1px solid var(--hairline);
@@ -178,7 +153,6 @@
       gap: 14px;
     }
 
-    /* utility */
     .w-full { width: 100%; }
     .max-w-md { max-width: 520px; margin-left: auto; margin-right: auto; }
     .min-h-screen { min-height: 100vh; min-height: -webkit-fill-available; }
@@ -198,10 +172,7 @@
     .mb-4 { margin-bottom: 20px; }
     .mb-5 { margin-bottom: 24px; }
     .mb-6 { margin-bottom: 32px; }
-    .p-3 { padding: 14px; }
-    .p-4 { padding: 20px; }
     .px-5 { padding-left: 24px; padding-right: 24px; }
-    .py-3 { padding-top: 16px; padding-bottom: 16px; }
     .pt-5 { padding-top: 24px; }
     .pb-24 { padding-bottom: 100px; }
     .text-center { text-align: center; }
@@ -226,13 +197,11 @@
     .text-ink-soft { color: var(--ink-soft); }
     .text-sm { font-size: 14px; }
     .text-xs { font-size: 12px; }
-    .text-lg { font-size: 20px; }
     .font-medium { font-weight: 500; }
     .font-semibold { font-weight: 600; }
     .leading-none { line-height: 1.1; }
     .leading-snug { line-height: 1.5; }
     .tabular-nums { font-variant-numeric: tabular-nums; }
-    .gap-1 { gap: 6px; }
   </style>
 </head>
 <body>
@@ -241,10 +210,6 @@
 
 <script>
 /* ========== DATA ========== */
-const SUBJECTS = { Maths:'#2B5FAD', Physics:'#7A4FB5', English:'#B8862E', Piano:'#2F7A5E', Percussion:'#C4542D', Other:'#6B6B63' };
-const SUBJECT_NAMES = Object.keys(SUBJECTS);
-function hexToRgba(hex, a){ const h=hex.replace('#',''); const r=parseInt(h.slice(0,2),16), g=parseInt(h.slice(2,4),16), b=parseInt(h.slice(4,6),16); return `rgba(${r},${g},${b},${a})`; }
-
 let state = { students: [], sessions: [], payments: [] };
 let loaded = false;
 let view = 'today';
@@ -273,11 +238,9 @@ function dayLabel(iso, opts){ const d=isoToDate(iso); const w=d.toLocaleDateStri
 function time12(t){ if(!t) return ''; let [h,m]=t.split(':').map(Number); const ap=h>=12?'pm':'am'; h=h%12; if(h===0) h=12; return h+(m?':'+pad(m):'')+ap; }
 function startOfWeek(iso){ const d=isoToDate(iso); const dow=d.getDay(); const diff=(dow===0?-6:1)-dow; d.setDate(d.getDate()+diff); return dateToISO(d); }
 function studentById(id){ return state.students.find(s=>s.id===id); }
-function subjectColor(name){ return SUBJECTS[name]||SUBJECTS.Other; }
 function sessionCost(session){
   const st=studentById(session.studentId); if(!st) return 0;
-  if(st.rateType==='hour') return (st.rate||0)*(session.duration||0)/60;
-  return st.rate||0;
+  return (st.rate||0) * (session.duration||0) / 60;
 }
 function studentBalance(studentId){
   const earned=state.sessions.filter(s=>s.studentId===studentId && s.status==='completed').reduce((sum,s)=>sum+sessionCost(s),0);
@@ -332,12 +295,11 @@ function renderToday(){
   return `${stats}<div class="flex items-center justify-between mb-4"><span class="text-[15px] text-ink-soft font-medium">Today's sessions</span><button data-action="add-session" class="press text-[15px] font-semibold" style="color:var(--ink);">+ Add session</button></div>${list}`;
 }
 function statCard(value,label,color){ return `<div class="stat-card"><div class="serif text-[28px] tabular leading-none" style="color:${color||'var(--ink)'};">${value}</div><div class="text-[13px] mt-2 text-ink-soft">${label}</div></div>`; }
-function emptyState(title,sub,action){ return `<div class="card-flat border-dashed py-12 px-6 text-center"><p class="serif text-[20px] mb-2">${title}</p><p class="text-[15px] mb-5 text-ink-soft">${sub}</p><button data-action="${action}" class="btn">+ Add</button></div>`; }
+function emptyState(title,sub,action){ return `<div class="card border-dashed py-12 px-6 text-center"><p class="serif text-[20px] mb-2">${title}</p><p class="text-[15px] mb-5 text-ink-soft">${sub}</p><button data-action="${action}" class="btn">+ Add</button></div>`; }
 function sessionRow(s){
   const st=studentById(s.studentId); if(!st) return '';
-  const color=subjectColor(s.subject);
   const done=s.status==='completed', cancelled=s.status==='cancelled';
-  return `<div data-action="open-session" data-id="${s.id}" class="session-row" style="opacity:${cancelled?0.55:1};"><div class="dot" style="background:${color};"></div><div class="flex-1 min-w-0"><div class="flex items-baseline gap-2"><span class="text-[17px] font-medium truncate">${st.name}</span><span class="text-[14px] shrink-0 text-ink-soft">${s.subject}</span></div><div class="text-[14px] mt-1 text-ink-soft">${time12(s.time)} · ${s.duration}min${cancelled?' · cancelled':''}</div></div>${done?`<span class="text-[12px] px-3 py-1.5 rounded-full shrink-0" style="background:var(--piano);color:white;font-weight:500;">Done</span>`:''}</div>`;
+  return `<div data-action="open-session" data-id="${s.id}" class="session-row" style="opacity:${cancelled?0.55:1};"><div class="flex-1 min-w-0"><div class="flex items-baseline gap-2"><span class="text-[17px] font-medium truncate">${st.name}</span></div><div class="text-[14px] mt-1 text-ink-soft">${time12(s.time)} · ${s.duration}min${cancelled?' · cancelled':''}</div></div>${done?`<span class="text-[12px] px-3 py-1.5 rounded-full shrink-0" style="background:var(--ink);color:white;font-weight:500;">Done</span>`:''}</div>`;
 }
 
 /* ---- schedule ---- */
@@ -350,7 +312,7 @@ function renderSchedule(){
     const daySessions=state.sessions.filter(s=>s.date===iso).sort((a,b)=>a.time.localeCompare(b.time));
     const {weekday,md}=dayLabel(iso,{short:true});
     const isToday=iso===todayISO();
-    return `<div class="mb-6"><div class="flex items-baseline gap-3 mb-3"><span class="text-[16px] font-medium" style="color:${isToday?'var(--ink)':'var(--ink-soft)'};">${weekday}</span><span class="text-[14px] text-ink-soft">${md}</span>${isToday?`<span class="w-2 h-2 rounded-full" style="background:var(--physics);"></span>`:''}</div>${daySessions.length===0?`<p class="text-[15px] text-[#B4B3A6]">—</p>`:`<div class="space-y-3">${daySessions.map(sessionRow).join('')}</div>`}</div>`;
+    return `<div class="mb-6"><div class="flex items-baseline gap-3 mb-3"><span class="text-[16px] font-medium" style="color:${isToday?'var(--ink)':'var(--ink-soft)'};">${weekday}</span><span class="text-[14px] text-ink-soft">${md}</span>${isToday?`<span class="w-2 h-2 rounded-full" style="background:var(--ink);"></span>`:''}</div>${daySessions.length===0?`<p class="text-[15px] text-[#B4B3A6]">—</p>`:`<div class="space-y-3">${daySessions.map(sessionRow).join('')}</div>`}</div>`;
   }).join('');
   return `<div class="flex items-center justify-between mb-6"><button data-action="week-prev" class="press text-[26px] px-3 text-ink-soft">←</button><div class="text-[17px] font-medium">${label}</div><button data-action="week-next" class="press text-[26px] px-3 text-ink-soft">→</button></div>${rows}<button data-action="add-session" class="btn btn-outline w-full mt-3">+ Add session</button>`;
 }
@@ -359,7 +321,7 @@ function renderSchedule(){
 function renderStudents(){
   const students=[...state.students].sort((a,b)=>a.name.localeCompare(b.name));
   if(!students.length) return emptyState('No students yet','Add your first student to start tracking lessons.','add-student');
-  return `<div class="space-y-3 mb-5">${students.map(s=>{const bal=studentBalance(s.id);return `<div data-action="open-student" data-id="${s.id}" class="student-item"><div class="flex-1 min-w-0"><div class="text-[17px] font-medium truncate">${s.name}</div><div class="flex flex-wrap gap-1.5 mt-2">${s.subjects.map(sub=>`<span class="chip" style="background:${hexToRgba(subjectColor(sub),0.12)};color:${subjectColor(sub)};">${sub}</span>`).join('')}</div></div><div class="text-right shrink-0"><div class="text-[17px] tabular font-medium" style="color:${bal>0?'var(--danger)':'var(--ink-soft)'};">${fmtMoney(Math.max(bal,0))}</div><div class="text-[12px] text-ink-soft">${bal>0?'owed':'settled'}</div></div></div>`}).join('')}</div><button data-action="add-student" class="btn btn-outline w-full">+ Add student</button>`;
+  return `<div class="space-y-3 mb-5">${students.map(s=>{const bal=studentBalance(s.id);return `<div data-action="open-student" data-id="${s.id}" class="student-item"><div class="flex-1 min-w-0"><div class="text-[17px] font-medium truncate">${s.name}</div><div class="text-[14px] text-ink-soft mt-1">${fmtMoney(s.rate)}/hr</div></div><div class="text-right shrink-0"><div class="text-[17px] tabular font-medium" style="color:${bal>0?'var(--danger)':'var(--ink-soft)'};">${fmtMoney(Math.max(bal,0))}</div><div class="text-[12px] text-ink-soft">${bal>0?'owed':'settled'}</div></div></div>`}).join('')}</div><button data-action="add-student" class="btn btn-outline w-full">+ Add student</button>`;
 }
 function renderStudentDetail(id){
   const s=studentById(id); if(!s) return '';
@@ -367,7 +329,7 @@ function renderStudentDetail(id){
   const payments=state.payments.filter(x=>x.studentId===id).sort((a,b)=>b.date.localeCompare(a.date));
   const bal=studentBalance(id);
   const notes=s.generalNotes||[];
-  return `<div class="mb-8"><h2 class="serif text-[32px] leading-none mb-2">${s.name}</h2><div class="flex flex-wrap gap-2 mt-3 mb-4">${s.subjects.map(sub=>`<span class="chip" style="background:${hexToRgba(subjectColor(sub),0.12)};color:${subjectColor(sub)};">${sub}</span>`).join('')}</div><p class="text-[15px] text-ink-soft">${s.rateType==='hour'?fmtMoney(s.rate)+'/hr':fmtMoney(s.rate)+'/session'}${s.phone?' · '+s.phone:''}</p><div class="flex gap-3 mt-5"><button data-action="edit-student" data-id="${s.id}" class="btn btn-outline flex-1">Edit details</button><button data-action="log-payment" data-id="${s.id}" class="btn flex-1">Log payment</button></div></div><div class="card mb-6 flex items-center justify-between"><span class="text-[15px] text-ink-soft">Balance</span><span class="serif text-[26px] tabular" style="color:${bal>0?'var(--danger)':'var(--ink)'};">${fmtMoney(bal)}</span></div><div class="mb-6"><div class="flex items-center justify-between mb-3"><span class="text-[15px] text-ink-soft font-medium">Notes</span><button data-action="add-note" data-id="${s.id}" class="press text-[15px] font-semibold">+ Add note</button></div>${notes.length===0?`<p class="text-[15px] text-[#B4B3A6]">No notes yet.</p>`:`<div class="space-y-3">${notes.slice().reverse().map(n=>`<div class="card"><p class="text-[15px] leading-snug">${escapeHtml(n.text)}</p><p class="text-[12px] mt-2 text-ink-soft">${isoToDate(n.date).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}</p></div>`).join('')}</div>`}</div><div class="mb-6"><span class="text-[15px] text-ink-soft font-medium">Session history</span>${sessions.length===0?`<p class="text-[15px] text-[#B4B3A6] mt-3">No sessions logged yet.</p>`:`<div class="space-y-3 mt-3">${sessions.map(sessionRow).join('')}</div>`}</div><div><span class="text-[15px] text-ink-soft font-medium">Payment history</span>${payments.length===0?`<p class="text-[15px] text-[#B4B3A6] mt-3">No payments logged yet.</p>`:`<div class="space-y-3 mt-3">${payments.map(p=>`<div class="card flex items-center justify-between"><div><div class="text-[15px]">${p.method||'Payment'}</div><div class="text-[13px] text-ink-soft mt-1">${isoToDate(p.date).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}${p.note?' · '+escapeHtml(p.note):''}</div></div><div class="text-[16px] tabular font-medium">${fmtMoney(p.amount)}</div></div>`).join('')}</div>`}</div>`;
+  return `<div class="mb-8"><h2 class="serif text-[32px] leading-none mb-2">${s.name}</h2><p class="text-[15px] text-ink-soft">${fmtMoney(s.rate)}/hr${s.phone?' · '+s.phone:''}</p><div class="flex gap-3 mt-5"><button data-action="edit-student" data-id="${s.id}" class="btn btn-outline flex-1">Edit details</button><button data-action="log-payment" data-id="${s.id}" class="btn flex-1">Log payment</button></div></div><div class="card mb-6 flex items-center justify-between"><span class="text-[15px] text-ink-soft">Balance</span><span class="serif text-[26px] tabular" style="color:${bal>0?'var(--danger)':'var(--ink)'};">${fmtMoney(bal)}</span></div><div class="mb-6"><div class="flex items-center justify-between mb-3"><span class="text-[15px] text-ink-soft font-medium">Notes</span><button data-action="add-note" data-id="${s.id}" class="press text-[15px] font-semibold">+ Add note</button></div>${notes.length===0?`<p class="text-[15px] text-[#B4B3A6]">No notes yet.</p>`:`<div class="space-y-3">${notes.slice().reverse().map(n=>`<div class="card"><p class="text-[15px] leading-snug">${escapeHtml(n.text)}</p><p class="text-[12px] mt-2 text-ink-soft">${isoToDate(n.date).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}</p></div>`).join('')}</div>`}</div><div class="mb-6"><span class="text-[15px] text-ink-soft font-medium">Session history</span>${sessions.length===0?`<p class="text-[15px] text-[#B4B3A6] mt-3">No sessions logged yet.</p>`:`<div class="space-y-3 mt-3">${sessions.map(sessionRow).join('')}</div>`}</div><div><span class="text-[15px] text-ink-soft font-medium">Payment history</span>${payments.length===0?`<p class="text-[15px] text-[#B4B3A6] mt-3">No payments logged yet.</p>`:`<div class="space-y-3 mt-3">${payments.map(p=>`<div class="card flex items-center justify-between"><div><div class="text-[15px]">${p.method||'Payment'}</div><div class="text-[13px] mt-1 text-ink-soft">${isoToDate(p.date).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}${p.note?' · '+escapeHtml(p.note):''}</div></div><div class="text-[16px] tabular font-medium">${fmtMoney(p.amount)}</div></div>`).join('')}</div>`}</div>`;
 }
 
 /* ---- payments ---- */
@@ -388,27 +350,24 @@ function closeModal(){ document.getElementById('modal-root').innerHTML=''; }
 function modalShell(title, bodyHtml, footerHtml){ return `<div class="px-5 pt-6 pb-4 flex items-center justify-between sticky top-0" style="background:var(--paper);"><h2 class="serif text-[22px]">${title}</h2><button data-action="modal-close" class="press text-[28px] leading-none px-2" style="color:var(--ink-soft);">×</button></div><div class="px-5 pb-7">${bodyHtml}</div>${footerHtml||''}`; }
 function field(label, inputHtml){ return `<div class="mb-5"><label class="block text-[14px] mb-2 text-ink-soft font-medium">${label}</label>${inputHtml}</div>`; }
 
-/* student form */
 function studentFormModal(existing){
-  const s=existing||{name:'',subjects:[],rate:'',rateType:'hour',phone:''};
-  openModal(modalShell(existing?'Edit student':'Add student', `<form id="student-form">${field('Name',`<input required name="name" value="${s.name}" placeholder="Student name" />`)}${field('Subjects',`<div class="flex flex-wrap gap-2">${SUBJECT_NAMES.map(sub=>`<label class="press text-[14px] px-4 py-2 rounded-full border cursor-pointer select-none subject-check" style="border-color:${s.subjects.includes(sub)?subjectColor(sub):'var(--hairline-strong)'};color:${s.subjects.includes(sub)?subjectColor(sub):'var(--ink-soft)'};"><input type="checkbox" name="subjects" value="${sub}" class="hidden" ${s.subjects.includes(sub)?'checked':''}/>${sub}</label>`).join('')}</div>`)}<div class="grid grid-cols-2 gap-4">${field('Rate',`<input required name="rate" type="number" step="0.01" min="0" value="${s.rate}" placeholder="0.00" />`)}${field('Per',`<select name="rateType"><option value="hour" ${s.rateType==='hour'?'selected':''}>Hour</option><option value="session" ${s.rateType==='session'?'selected':''}>Session</option></select>`)}</div>${field('Phone / contact <span style="color:#B4B3A6;">(optional)</span>',`<input name="phone" value="${s.phone||''}" placeholder="04xx xxx xxx" />`)}<button type="submit" class="btn w-full mt-3">${existing?'Save changes':'Add student'}</button>${existing?`<button type="button" data-action="delete-student" data-id="${existing.id}" class="btn btn-danger w-full mt-3">Delete student</button>`:''}</form>`));
-  document.querySelectorAll('.subject-check').forEach(label=>{ label.addEventListener('click',()=>{ const cb=label.querySelector('input'); setTimeout(()=>{ const checked=cb.checked; label.style.borderColor=checked?subjectColor(cb.value):'var(--hairline-strong)'; label.style.color=checked?subjectColor(cb.value):'var(--ink-soft)'; },0); }); });
-  document.getElementById('student-form').addEventListener('submit',(e)=>{ e.preventDefault(); const fd=new FormData(e.target); const subjects=fd.getAll('subjects'); if(!subjects.length){ alert('Pick at least one subject.'); return; } const data={name:fd.get('name').trim(),subjects,rate:parseFloat(fd.get('rate'))||0,rateType:fd.get('rateType'),phone:fd.get('phone').trim()}; if(existing){ Object.assign(existing,data); } else { state.students.push({id:uid(),generalNotes:[],...data}); } saveData(); closeModal(); render(); });
+  const s=existing||{name:'',rate:'',phone:''};
+  openModal(modalShell(existing?'Edit student':'Add student', `<form id="student-form">${field('Name',`<input required name="name" value="${s.name}" placeholder="Student name" />`)}${field('Hourly rate',`<input required name="rate" type="number" step="0.01" min="0" value="${s.rate}" placeholder="0.00" />`)}${field('Phone / contact <span style="color:#B4B3A6;">(optional)</span>',`<input name="phone" value="${s.phone||''}" placeholder="04xx xxx xxx" />`)}<button type="submit" class="btn w-full mt-3">${existing?'Save changes':'Add student'}</button>${existing?`<button type="button" data-action="delete-student" data-id="${existing.id}" class="btn btn-danger w-full mt-3">Delete student</button>`:''}</form>`));
+  document.getElementById('student-form').addEventListener('submit',(e)=>{ e.preventDefault(); const fd=new FormData(e.target); const data={name:fd.get('name').trim(),rate:parseFloat(fd.get('rate'))||0,phone:fd.get('phone').trim()}; if(existing){ Object.assign(existing,data); } else { state.students.push({id:uid(),generalNotes:[],...data}); } saveData(); closeModal(); render(); });
 }
 
-/* session form */
 function sessionFormModal(existing){
   if(!state.students.length){ studentFormModal(null); return; }
-  const s=existing||{studentId:state.students[0].id,date:todayISO(),time:'15:00',duration:60,subject:state.students[0].subjects[0],status:'scheduled'};
-  openModal(modalShell(existing?'Edit session':'Add session', `<form id="session-form">${field('Student',`<select name="studentId" id="sess-student">${state.students.map(st=>`<option value="${st.id}" ${s.studentId===st.id?'selected':''}>${st.name}</option>`).join('')}</select>`)}${field('Subject',`<select name="subject" id="sess-subject"></select>`)}<div class="grid grid-cols-2 gap-4">${field('Date',`<input required name="date" type="date" value="${s.date}" />`)}${field('Time',`<input required name="time" type="time" value="${s.time}" />`)}</div>${field('Duration (minutes)',`<input required name="duration" type="number" min="5" step="5" value="${s.duration}" />`)}<button type="submit" class="btn w-full mt-3">${existing?'Save changes':'Add session'}</button></form>`));
-  function populateSubjects(){ const st=studentById(document.getElementById('sess-student').value); const sel=document.getElementById('sess-subject'); sel.innerHTML=(st?st.subjects:SUBJECT_NAMES).map(sub=>`<option value="${sub}" ${sub===s.subject?'selected':''}>${sub}</option>`).join(''); }
-  populateSubjects(); document.getElementById('sess-student').addEventListener('change',populateSubjects);
-  document.getElementById('session-form').addEventListener('submit',(e)=>{ e.preventDefault(); const fd=new FormData(e.target); const data={studentId:fd.get('studentId'),subject:fd.get('subject'),date:fd.get('date'),time:fd.get('time'),duration:parseInt(fd.get('duration'),10)}; if(existing){ Object.assign(existing,data); } else { state.sessions.push({id:uid(),status:'scheduled',note:'',...data}); } saveData(); closeModal(); render(); });
+  const s=existing||{studentId:state.students[0].id,date:todayISO(),time:'15:00',duration:60,status:'scheduled'};
+  openModal(modalShell(existing?'Edit session':'Add session', `<form id="session-form">${field('Student',`<select name="studentId">${state.students.map(st=>`<option value="${st.id}" ${s.studentId===st.id?'selected':''}>${st.name}</option>`).join('')}</select>`)}<div class="grid grid-cols-2 gap-4">${field('Date',`<input required name="date" type="date" value="${s.date}" />`)}${field('Time',`<input required name="time" type="time" value="${s.time}" />`)}</div>${field('Duration (minutes)',`<input required name="duration" type="number" min="5" step="5" value="${s.duration}" />`)}<button type="submit" class="btn w-full mt-3">${existing?'Save changes':'Add session'}</button></form>`));
+  document.getElementById('session-form').addEventListener('submit',(e)=>{ e.preventDefault(); const fd=new FormData(e.target); const data={studentId:fd.get('studentId'),date:fd.get('date'),time:fd.get('time'),duration:parseInt(fd.get('duration'),10)}; if(existing){ Object.assign(existing,data); } else { state.sessions.push({id:uid(),status:'scheduled',note:'',...data}); } saveData(); closeModal(); render(); });
 }
+
 function sessionActionsModal(session){
   const st=studentById(session.studentId);
-  openModal(modalShell(st?st.name:'Session', `<p class="text-[15px] mb-5 text-ink-soft">${session.subject} · ${time12(session.time)} · ${session.duration}min</p><div class="grid grid-cols-2 gap-3 mb-5"><button data-action="mark-session" data-status="completed" data-id="${session.id}" class="btn" style="background:var(--piano);">Mark completed</button><button data-action="mark-session" data-status="cancelled" data-id="${session.id}" class="btn btn-outline">Mark cancelled</button></div>${field('Note',`<textarea name="note" rows="3" placeholder="What did you cover?">${session.note||''}</textarea>`)}<button data-action="save-session-note" data-id="${session.id}" class="btn btn-outline w-full mb-3">Save note</button><div class="flex gap-3"><button data-action="edit-session" data-id="${session.id}" class="btn flex-1">Edit</button><button data-action="delete-session" data-id="${session.id}" class="btn btn-danger flex-1">Delete</button></div>`));
+  openModal(modalShell(st?st.name:'Session', `<p class="text-[15px] mb-5 text-ink-soft">${time12(session.time)} · ${session.duration}min</p><div class="grid grid-cols-2 gap-3 mb-5"><button data-action="mark-session" data-status="completed" data-id="${session.id}" class="btn" style="background:var(--ink);">Mark completed</button><button data-action="mark-session" data-status="cancelled" data-id="${session.id}" class="btn btn-outline">Mark cancelled</button></div>${field('Note',`<textarea name="note" rows="3" placeholder="What did you cover?">${session.note||''}</textarea>`)}<button data-action="save-session-note" data-id="${session.id}" class="btn btn-outline w-full mb-3">Save note</button><div class="flex gap-3"><button data-action="edit-session" data-id="${session.id}" class="btn flex-1">Edit</button><button data-action="delete-session" data-id="${session.id}" class="btn btn-danger flex-1">Delete</button></div>`));
 }
+
 function paymentFormModal(studentId){
   if(!state.students.length){ studentFormModal(null); return; }
   const initial=studentId||state.students[0].id;
@@ -417,6 +376,7 @@ function paymentFormModal(studentId){
   document.getElementById('pay-student').addEventListener('change',(e)=>{ const b=Math.max(0,studentBalance(e.target.value)); document.getElementById('pay-amount').value=b>0?b.toFixed(2):''; });
   document.getElementById('payment-form').addEventListener('submit',(e)=>{ e.preventDefault(); const fd=new FormData(e.target); state.payments.push({id:uid(),studentId:fd.get('studentId'),amount:parseFloat(fd.get('amount'))||0,date:fd.get('date'),method:fd.get('method'),note:fd.get('note').trim()}); saveData(); closeModal(); render(); });
 }
+
 function noteFormModal(studentId){
   const s=studentById(studentId); if(!s) return;
   openModal(modalShell('Add note', `<form id="note-form">${field(s.name,`<textarea required name="text" rows="5" placeholder="Progress, reminders, anything worth remembering..."></textarea>`)}<button type="submit" class="btn w-full mt-3">Save note</button></form>`));
