@@ -861,81 +861,60 @@ function attachModalHandlers(){
 function attachHandlers(){
   const app = document.getElementById('app');
   
-  // Use event delegation for nav buttons (they get recreated on every render)
+  // Remove any existing click listener to prevent duplicates
+  app._clickHandler = null;
+  
+  // Use event delegation for ALL buttons
   app.addEventListener('click', function(e) {
-    const navBtn = e.target.closest('[data-action="nav"]');
-    if (navBtn) {
-      view = navBtn.dataset.view;
-      weekOffset = 0;
-      render();
-      return;
-    }
+    const target = e.target.closest('[data-action]');
+    if (!target) return;
     
-    const backBtn = e.target.closest('[data-action="back-students"]');
-    if (backBtn) {
-      view = 'students';
-      openStudentId = null;
-      render();
-      return;
-    }
+    const action = target.dataset.action;
+    const id = target.dataset.id;
     
-    const openStudent = e.target.closest('[data-action="open-student"]');
-    if (openStudent) {
-      openStudentId = openStudent.dataset.id;
-      view = 'student';
-      render();
-      return;
-    }
-    
-    const openSession = e.target.closest('[data-action="open-session"]');
-    if (openSession) {
-      const sess = state.sessions.find(s => s.id === openSession.dataset.id);
-      if(sess) sessionActionsModal(sess);
-      return;
-    }
-    
-    const addStudent = e.target.closest('[data-action="add-student"]');
-    if (addStudent) {
-      studentFormModal(null);
-      return;
-    }
-    
-    const editStudent = e.target.closest('[data-action="edit-student"]');
-    if (editStudent) {
-      studentFormModal(studentById(editStudent.dataset.id));
-      return;
-    }
-    
-    const addSession = e.target.closest('[data-action="add-session"]');
-    if (addSession) {
-      sessionFormModal(null);
-      return;
-    }
-    
-    const logPayment = e.target.closest('[data-action="log-payment"]');
-    if (logPayment) {
-      paymentFormModal(logPayment.dataset.id);
-      return;
-    }
-    
-    const addNote = e.target.closest('[data-action="add-note"]');
-    if (addNote) {
-      noteFormModal(addNote.dataset.id);
-      return;
-    }
-    
-    const weekPrev = e.target.closest('[data-action="week-prev"]');
-    if (weekPrev) {
-      weekOffset--;
-      render();
-      return;
-    }
-    
-    const weekNext = e.target.closest('[data-action="week-next"]');
-    if (weekNext) {
-      weekOffset++;
-      render();
-      return;
+    switch(action) {
+      case 'nav':
+        view = target.dataset.view;
+        weekOffset = 0;
+        render();
+        break;
+      case 'back-students':
+        view = 'students';
+        openStudentId = null;
+        render();
+        break;
+      case 'open-student':
+        openStudentId = id;
+        view = 'student';
+        render();
+        break;
+      case 'open-session':
+        const sess = state.sessions.find(s => s.id === id);
+        if(sess) sessionActionsModal(sess);
+        break;
+      case 'add-student':
+        studentFormModal(null);
+        break;
+      case 'edit-student':
+        studentFormModal(studentById(id));
+        break;
+      case 'add-session':
+        sessionFormModal(null);
+        break;
+      case 'log-payment':
+        paymentFormModal(id);
+        break;
+      case 'add-note':
+        noteFormModal(id);
+        break;
+      case 'week-prev':
+        weekOffset--;
+        render();
+        break;
+      case 'week-next':
+        weekOffset++;
+        render();
+        break;
     }
   });
 }
