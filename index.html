@@ -856,8 +856,15 @@ function attachModalHandlers(){
 }
 
 function attachHandlers(){
+    // Fix: Attach nav handlers to the nav container directly
+  const nav = document.getElementById('bottom-nav');
+  nav.querySelectorAll('[data-action="nav"]').forEach(el => el.addEventListener('click', () => { 
+    view = el.dataset.view; 
+    weekOffset = 0; 
+    render(); 
+  }));
+  
   const container = document.getElementById('scroll-container');
-  container.querySelectorAll('[data-action="nav"]').forEach(el => el.addEventListener('click', () => { view = el.dataset.view; weekOffset = 0; render(); }));
   const back = container.querySelector('[data-action="back-students"]');
   if(back) back.addEventListener('click', () => { view = 'students'; openStudentId = null; render(); });
   container.querySelectorAll('[data-action="open-student"]').forEach(el => el.addEventListener('click', () => { openStudentId = el.dataset.id; view = 'student'; render(); }));
