@@ -3070,5 +3070,35 @@
       });
     }
   </script>
+  <script>
+document.addEventListener("DOMContentLoaded", () => {
+  // Add Student
+  document.querySelectorAll('[data-action="add-student"]').forEach(button => {
+    button.addEventListener("click", () => {
+      if (typeof openStudentModal === "function") {
+        openStudentModal();
+      }
+    });
+  });
+
+  // Add Session
+  document.querySelectorAll('[data-action="add-session"]').forEach(button => {
+    button.addEventListener("click", () => {
+      if (typeof openSessionModal === "function") {
+        openSessionModal();
+      }
+    });
+  });
+
+  // Log Payment
+  document.querySelectorAll('[data-action="log-payment"]').forEach(button => {
+    button.addEventListener("click", () => {
+      if (typeof openPaymentModal === "function") {
+        openPaymentModal();
+      }
+    });
+  });
+});
+</script>
 </body>
 </html>
