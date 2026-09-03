@@ -25,6 +25,12 @@
     --ink-soft: #5B6360;
     --hairline: #DBDACF;
     --hairline-strong: #C7C6B9;
+    --maths: #2B5FAD;
+    --physics: #7A4FB5;
+    --english: #B8862E;
+    --piano: #2F7A5E;
+    --percussion: #C4542D;
+    --other: #6B6B63;
     --danger: #A33D3D;
     --accent: #2B5FAD;
   }
@@ -52,6 +58,21 @@
 
 <script>
 /* ============================= DATA ============================= */
+const SUBJECTS = {
+  Maths:      '#2B5FAD',
+  Physics:    '#7A4FB5',
+  English:    '#B8862E',
+  Piano:      '#2F7A5E',
+  Percussion: '#C4542D',
+  Other:      '#6B6B63',
+};
+const SUBJECT_NAMES = Object.keys(SUBJECTS);
+function hexToRgba(hex, alpha){
+  const h = hex.replace('#','');
+  const r = parseInt(h.substring(0,2),16), g = parseInt(h.substring(2,4),16), b = parseInt(h.substring(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 let state = { students: [], sessions: [], payments: [] };
 let loaded = false;
 let view = 'today';
@@ -94,6 +115,7 @@ function dayLabel(iso, opts){ opts = opts || {}; const d = isoToDate(iso);
 function time12(t){ if(!t) return ''; let [h,m] = t.split(':').map(Number); const ap = h >= 12 ? 'pm' : 'am'; h = h % 12; if(h===0) h = 12; return h + (m ? ':' + pad(m) : '') + ap; }
 function startOfWeek(iso){ const d = isoToDate(iso); const dow = d.getDay(); const diff = (dow === 0 ? -6 : 1) - dow; d.setDate(d.getDate() + diff); return dateToISO(d); }
 function studentById(id){ return state.students.find(s => s.id === id); }
+function subjectColor(name){ return SUBJECTS[name] || SUBJECTS.Other; }
 
 function sessionCost(session){
   const st = studentById(session.studentId);
@@ -129,6 +151,7 @@ function render(){
     <div class="flex-1 px-5 pt-5 fade-enter">${body}</div>
     ${renderTabBar()}
   `;
+  attachHandlers();
 }
 
 function renderHeader(){
@@ -228,23 +251,25 @@ function emptyState(title, sub, action){
 function sessionRow(s){
   const st = studentById(s.studentId);
   if(!st) return '';
+  const color = subjectColor(s.subject || 'Other');
   const done = s.status === 'completed';
   const cancelled = s.status === 'cancelled';
   const isRecurring = s.recurring === true;
   return `
     <div data-action="open-session" data-id="${s.id}" class="press rounded-xl border p-3.5 flex items-center gap-3"
       style="background: var(--paper-raised); border-color: var(--hairline); opacity: ${cancelled ? '0.55' : '1'};">
-      <div class="w-1 self-stretch rounded-full" style="background: var(--accent);"></div>
+      <div class="w-1 self-stretch rounded-full" style="background: ${color};"></div>
       <div class="flex-1 min-w-0">
         <div class="flex items-baseline gap-2">
           <span class="text-[15px] font-medium truncate">${st.name}</span>
-          ${isRecurring ? `<span class="text-[10px] px-1.5 py-0.5 rounded-full" style="background: var(--accent); color: white;">Weekly</span>` : ''}
+          <span class="text-[12px] shrink-0" style="color: var(--ink-soft);">${s.subject || 'Lesson'}</span>
+          ${isRecurring ? `<span class="text-[9px] px-1.5 py-0.5 rounded-full shrink-0" style="background: var(--accent); color: white;">Weekly</span>` : ''}
         </div>
         <div class="text-[12.5px] mt-0.5" style="color: var(--ink-soft);">
           ${time12(s.time)} &middot; ${s.duration}min${cancelled ? ' &middot; cancelled' : ''}
         </div>
       </div>
-      ${done ? `<span class="text-[11px] px-2 py-1 rounded-full shrink-0" style="background: var(--accent); color: white;">Done</span>` : ''}
+      ${done ? `<span class="text-[11px] px-2 py-1 rounded-full shrink-0" style="background: var(--piano); color: white;">Done</span>` : ''}
     </div>`;
 }
 
@@ -264,7 +289,7 @@ function renderSchedule(){
         <div class="flex items-baseline gap-2 mb-2">
           <span class="text-[13px] font-medium" style="color: ${isToday ? 'var(--ink)' : 'var(--ink-soft)'};">${weekday}</span>
           <span class="text-[12px]" style="color: var(--ink-soft);">${md}</span>
-          ${isToday ? `<span class="w-1.5 h-1.5 rounded-full" style="background: var(--accent);"></span>` : ''}
+          ${isToday ? `<span class="w-1.5 h-1.5 rounded-full" style="background: var(--physics);"></span>` : ''}
         </div>
         ${daySessions.length === 0
           ? `<p class="text-[13px] pl-0.5" style="color: #B4B3A6;">—</p>`
@@ -300,7 +325,9 @@ function renderStudents(){
           style="background: var(--paper-raised); border-color: var(--hairline);">
           <div class="flex-1 min-w-0">
             <div class="text-[15px] font-medium truncate">${s.name}</div>
-            <div class="text-[12px] mt-1" style="color: var(--ink-soft);">${s.rateType === 'hour' ? fmtMoney(s.rate) + '/hr' : fmtMoney(s.rate) + '/session'}</div>
+            <div class="flex flex-wrap gap-1.5 mt-1.5">
+              ${(s.subjects || ['Lesson']).map(sub => `<span class="text-[10.5px] px-1.5 py-0.5 rounded" style="background: ${hexToRgba(subjectColor(sub),0.1)}; color: ${subjectColor(sub)};">${sub}</span>`).join('')}
+            </div>
           </div>
           <div class="text-right shrink-0">
             <div class="text-[14px] tabular font-medium" style="color: ${bal > 0 ? 'var(--danger)' : 'var(--ink-soft)'};">${fmtMoney(Math.max(bal,0))}</div>
@@ -324,6 +351,9 @@ function renderStudentDetail(id){
   return `
     <div class="mb-6">
       <h2 class="serif text-[26px] leading-none mb-1">${s.name}</h2>
+      <div class="flex flex-wrap gap-1.5 mt-2 mb-3">
+        ${(s.subjects || ['Lesson']).map(sub => `<span class="text-[11px] px-2 py-0.5 rounded" style="background: ${hexToRgba(subjectColor(sub),0.1)}; color: ${subjectColor(sub)};">${sub}</span>`).join('')}
+      </div>
       <p class="text-[13px]" style="color: var(--ink-soft);">
         ${s.rateType === 'hour' ? fmtMoney(s.rate) + '/hr' : fmtMoney(s.rate) + '/session'}${s.phone ? ' &middot; ' + s.phone : ''}
       </p>
@@ -409,6 +439,9 @@ function renderPayments(){
 
   return `
     ${owingBlock}
+    <div class="flex items-center justify-between mb-2.5">
+      ${allPayments.length > 0 ? '' : ''}
+    </div>
     ${historyBlock}
     ${allPayments.length > 0 ? `<button data-action="log-payment" class="press w-full text-[13px] py-3 rounded-xl border border-dashed mt-4" style="border-color: var(--hairline-strong); color: var(--ink-soft);">+ Log payment</button>` : ''}
   `;
@@ -445,10 +478,18 @@ const inputCls = "w-full rounded-lg px-3 py-2.5 text-[15px]";
 
 /* ---- Add / Edit Student ---- */
 function studentFormModal(existing){
-  const s = existing || { name:'', rate:'', rateType:'hour', phone:'' };
+  const s = existing || { name:'', subjects:[], rate:'', rateType:'hour', phone:'' };
   openModal(modalShell(existing ? 'Edit student' : 'Add student', `
     <form id="student-form">
       ${field('Name', `<input required name="name" class="${inputCls}" value="${s.name}" placeholder="Student name" />`)}
+      ${field('Subjects', `
+        <div class="flex flex-wrap gap-2">
+          ${SUBJECT_NAMES.map(sub => `
+            <label class="press text-[12.5px] px-2.5 py-1.5 rounded-full border cursor-pointer select-none subject-check"
+              style="border-color: ${s.subjects.includes(sub) ? subjectColor(sub) : 'var(--hairline-strong)'}; color: ${s.subjects.includes(sub) ? subjectColor(sub) : 'var(--ink-soft)'};">
+              <input type="checkbox" name="subjects" value="${sub}" class="hidden" ${s.subjects.includes(sub) ? 'checked' : ''}/>${sub}
+            </label>`).join('')}
+        </div>`)}
       <div class="grid grid-cols-2 gap-3">
         ${field('Rate', `<input required name="rate" type="number" step="0.01" min="0" class="${inputCls}" value="${s.rate}" placeholder="0.00" />`)}
         ${field('Per', `
@@ -462,10 +503,22 @@ function studentFormModal(existing){
       ${existing ? `<button type="button" data-action="delete-student" data-id="${existing.id}" class="press w-full py-3 rounded-lg text-[13.5px] mt-2" style="color: var(--danger);">Delete student</button>` : ''}
     </form>
   `));
+  document.querySelectorAll('.subject-check').forEach(label => {
+    label.addEventListener('click', (e) => {
+      const cb = label.querySelector('input'); const sub = cb.value;
+      setTimeout(() => {
+        const checked = cb.checked;
+        label.style.borderColor = checked ? subjectColor(sub) : 'var(--hairline-strong)';
+        label.style.color = checked ? subjectColor(sub) : 'var(--ink-soft)';
+      }, 0);
+    });
+  });
   document.getElementById('student-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
-    const data = { name: fd.get('name').trim(), rate: parseFloat(fd.get('rate')) || 0, rateType: fd.get('rateType'), phone: fd.get('phone').trim() };
+    const subjects = fd.getAll('subjects');
+    if(subjects.length === 0){ alert('Pick at least one subject.'); return; }
+    const data = { name: fd.get('name').trim(), subjects, rate: parseFloat(fd.get('rate')) || 0, rateType: fd.get('rateType'), phone: fd.get('phone').trim() };
     if(existing){
       Object.assign(existing, data);
     } else {
@@ -478,35 +531,39 @@ function studentFormModal(existing){
 /* ---- Add Multiple Sessions ---- */
 function sessionFormModal(existing){
   if(state.students.length === 0){ studentFormModal(null); return; }
-  const s = existing || { studentId: state.students[0].id, date: todayISO(), time: '15:00', duration: 60, status: 'scheduled', recurring: false };
+  const s = existing || { studentId: state.students[0].id, date: todayISO(), time: '15:00', duration: 60, subject: state.students[0].subjects[0] || 'Lesson', status: 'scheduled', recurring: false };
   openModal(modalShell(existing ? 'Edit session' : 'Add sessions', `
     <form id="session-form">
       ${field('Student', `
         <select name="studentId" id="sess-student" class="${inputCls}">
           ${state.students.map(st => `<option value="${st.id}" ${s.studentId===st.id?'selected':''}>${st.name}</option>`).join('')}
         </select>`)}
+      ${field('Subject', `
+        <select name="subject" id="sess-subject" class="${inputCls}"></select>`)}
       <div class="grid grid-cols-2 gap-3">
         ${field('Start Date', `<input required name="date" type="date" class="${inputCls}" value="${s.date}" />`)}
         ${field('Time', `<input required name="time" type="time" class="${inputCls}" value="${s.time}" />`)}
       </div>
       ${field('Duration (minutes)', `<input required name="duration" type="number" min="5" step="5" class="${inputCls}" value="${s.duration}" />`)}
       
-      ${field('Number of sessions', `
-        <input name="sessionCount" type="number" min="1" max="52" class="${inputCls}" value="1" placeholder="1" />
-        <p class="text-[11px] mt-1" style="color: var(--ink-soft);">How many sessions to create (e.g. 4 for a month of weekly lessons)</p>
-      `)}
-      
-      ${field('Repeat weekly', `
-        <div class="flex items-center gap-3">
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="radio" name="recurring" value="true" ${s.recurring ? 'checked' : ''} /> Yes
-          </label>
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="radio" name="recurring" value="false" ${!s.recurring ? 'checked' : ''} /> No
-          </label>
-        </div>
-        <p class="text-[11px] mt-1" style="color: var(--ink-soft);">If yes, sessions will be scheduled weekly on the same day</p>
-      `)}
+      ${existing ? '' : `
+        ${field('Number of sessions', `
+          <input name="sessionCount" type="number" min="1" max="52" class="${inputCls}" value="1" placeholder="1" />
+          <p class="text-[11px] mt-1" style="color: var(--ink-soft);">How many sessions to create (e.g. 4 for a month of weekly lessons)</p>
+        `)}
+        
+        ${field('Repeat weekly', `
+          <div class="flex items-center gap-3">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="recurring" value="true" ${s.recurring ? 'checked' : ''} /> Yes
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="recurring" value="false" ${!s.recurring ? 'checked' : ''} /> No
+            </label>
+          </div>
+          <p class="text-[11px] mt-1" style="color: var(--ink-soft);">If yes, sessions will be scheduled weekly on the same day</p>
+        `)}
+      `}
       
       <button type="submit" class="press w-full py-3 rounded-lg text-[14px] font-medium mt-2" style="background: var(--ink); color: var(--paper);">
         ${existing ? 'Save changes' : 'Create sessions'}
@@ -514,36 +571,47 @@ function sessionFormModal(existing){
     </form>
   `));
   
+  function populateSubjects(){
+    const st = studentById(document.getElementById('sess-student').value);
+    const sel = document.getElementById('sess-subject');
+    sel.innerHTML = (st ? st.subjects : SUBJECT_NAMES).map(sub => `<option value="${sub}" ${sub===s.subject?'selected':''}>${sub}</option>`).join('');
+  }
+  populateSubjects();
+  document.getElementById('sess-student').addEventListener('change', populateSubjects);
+  
   document.getElementById('session-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
     const studentId = fd.get('studentId');
+    const subject = fd.get('subject');
     const date = fd.get('date');
     const time = fd.get('time');
     const duration = parseInt(fd.get('duration'),10);
-    const sessionCount = parseInt(fd.get('sessionCount'),10) || 1;
-    const recurring = fd.get('recurring') === 'true';
     
     if(existing){
       // Edit existing session
-      Object.assign(existing, { studentId, date, time, duration });
+      Object.assign(existing, { studentId, subject, date, time, duration });
       saveData(); closeModal(); render();
       return;
     }
     
     // Create multiple sessions
+    const sessionCount = parseInt(fd.get('sessionCount'),10) || 1;
+    const recurring = fd.get('recurring') === 'true';
+    
     const sessions = [];
     for(let i = 0; i < sessionCount; i++) {
       const sessionDate = i === 0 ? date : (recurring ? addWeeks(date, i) : addDays(date, i));
       sessions.push({
         id: uid(),
         studentId: studentId,
+        subject: subject,
         date: sessionDate,
         time: time,
         duration: duration,
         status: 'scheduled',
         recurring: recurring && i === 0, // Mark only the first as recurring for display
-        note: recurring ? `Part of weekly series (${sessionCount} sessions)` : ''
+        note: recurring && sessionCount > 1 ? `Part of weekly series (${sessionCount} sessions)` : ''
       });
     }
     
@@ -560,11 +628,11 @@ function sessionActionsModal(session){
   const isRecurring = session.recurring === true;
   openModal(modalShell(st ? st.name : 'Session', `
     <p class="text-[13.5px] mb-4" style="color: var(--ink-soft);">
-      ${time12(session.time)} &middot; ${session.duration}min
+      ${session.subject || 'Lesson'} &middot; ${time12(session.time)} &middot; ${session.duration}min
       ${isRecurring ? ' &middot; <span style="background: var(--accent); color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px;">Weekly</span>' : ''}
     </p>
     <div class="grid grid-cols-2 gap-2.5 mb-4">
-      <button data-action="mark-session" data-status="completed" data-id="${session.id}" class="press py-2.5 rounded-lg text-[13.5px]" style="background: var(--accent); color: white;">Mark completed</button>
+      <button data-action="mark-session" data-status="completed" data-id="${session.id}" class="press py-2.5 rounded-lg text-[13.5px]" style="background: var(--piano); color: white;">Mark completed</button>
       <button data-action="mark-session" data-status="cancelled" data-id="${session.id}" class="press py-2.5 rounded-lg text-[13.5px] border" style="border-color: var(--hairline-strong);">Mark cancelled</button>
     </div>
     ${field('Note', `<textarea name="note" rows="2" class="${inputCls}" placeholder="What did you cover?">${session.note||''}</textarea>`)}
