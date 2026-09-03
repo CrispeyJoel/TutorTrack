@@ -859,39 +859,25 @@ function attachModalHandlers(){
 }
 
 function attachHandlers(){
-    // Fix: Attach nav handlers to the nav container directly
-// NAVIGATION - fixed to target the nav bar using event delegation
-  const nav = document.getElementById('bottom-nav');
-  nav.addEventListener('click', function(e) {
-    const button = e.target.closest('[data-action="nav"]');
-    if (button) {
-      view = button.dataset.view;
-      weekOffset = 0;
-      render();
-    }
-  });
-  
-  const container = document.getElementById('scroll-container');
-  const back = container.querySelector('[data-action="back-students"]');
+  const app = document.getElementById('app');
+  app.querySelectorAll('[data-action="nav"]').forEach(el => el.addEventListener('click', () => { view = el.dataset.view; weekOffset = 0; render(); }));
+  const back = app.querySelector('[data-action="back-students"]');
   if(back) back.addEventListener('click', () => { view = 'students'; openStudentId = null; render(); });
-  container.querySelectorAll('[data-action="open-student"]').forEach(el => el.addEventListener('click', () => { openStudentId = el.dataset.id; view = 'student'; render(); }));
-  container.querySelectorAll('[data-action="open-session"]').forEach(el => el.addEventListener('click', () => {
+  app.querySelectorAll('[data-action="open-student"]').forEach(el => el.addEventListener('click', () => { openStudentId = el.dataset.id; view = 'student'; render(); }));
+  app.querySelectorAll('[data-action="open-session"]').forEach(el => el.addEventListener('click', () => {
     const sess = state.sessions.find(s => s.id === el.dataset.id);
     if(sess) sessionActionsModal(sess);
   }));
-  container.querySelectorAll('[data-action="add-student"]').forEach(el => el.addEventListener('click', () => studentFormModal(null)));
-  container.querySelectorAll('[data-action="edit-student"]').forEach(el => el.addEventListener('click', () => studentFormModal(studentById(el.dataset.id))));
-  container.querySelectorAll('[data-action="add-session"]').forEach(el => el.addEventListener('click', () => sessionFormModal(null)));
-  container.querySelectorAll('[data-action="log-payment"]').forEach(el => el.addEventListener('click', () => paymentFormModal(el.dataset.id)));
-  container.querySelectorAll('[data-action="add-note"]').forEach(el => el.addEventListener('click', () => noteFormModal(el.dataset.id)));
-  const prev = container.querySelector('[data-action="week-prev"]'); if(prev) prev.addEventListener('click', () => { weekOffset--; render(); });
-  const next = container.querySelector('[data-action="week-next"]'); if(next) next.addEventListener('click', () => { weekOffset++; render(); });
-}
-
-loadData();
-
-if('serviceWorker' in navigator){
-  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+  app.querySelectorAll('[data-action="add-student"]').forEach(el => el.addEventListener('click', () => studentFormModal(null)));
+  app.querySelectorAll('[data-action="edit-student"]').forEach(el => el.addEventListener('click', () => studentFormModal(studentById(el.dataset.id))));
+  app.querySelectorAll('[data-action="add-session"]').forEach(el => el.addEventListener('click', () => sessionFormModal(null)));
+  app.querySelectorAll('[data-action="log-payment"]').forEach(el => el.addEventListener('click', () => paymentFormModal(el.dataset.id)));
+  app.querySelectorAll('[data-action="add-note"]').forEach(el => el.addEventListener('click', () => noteFormModal(el.dataset.id)));
+  const prev = app.querySelector('[data-action="week-prev"]'); if(prev) prev.addEventListener('click', () => { weekOffset--; render(); });
+  const next = app.querySelector('[data-action="week-next"]'); if(next) next.addEventListener('click', () => { weekOffset++; render(); });
+  
+  // ADD THIS LINE - direct handler for empty state button
+  document.querySelector('[data-action="add-student"]')?.addEventListener('click', () => studentFormModal(null));
 }
 </script>
 </body>
