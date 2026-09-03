@@ -862,10 +862,12 @@ function attachHandlers(){
   const app = document.getElementById('app');
   
   // Remove any existing click listener to prevent duplicates
-  app._clickHandler = null;
+  if (app._clickHandler) {
+    app.removeEventListener('click', app._clickHandler);
+  }
   
-  // Use event delegation for ALL buttons
-  app.addEventListener('click', function(e) {
+  // Create the handler function
+  app._clickHandler = function(e) {
     const target = e.target.closest('[data-action]');
     if (!target) return;
     
@@ -916,7 +918,10 @@ function attachHandlers(){
         render();
         break;
     }
-  });
+  };
+  
+  // Add the event listener
+  app.addEventListener('click', app._clickHandler);
 }
 </script>
 </body>
