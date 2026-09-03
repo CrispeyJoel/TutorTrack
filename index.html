@@ -399,12 +399,14 @@ function render(){
   // header
   header.innerHTML = renderHeader();
 
-  // body
+// body - force clear and replace
   const body = view === 'student' ? renderStudentDetail(openStudentId)
     : view === 'schedule' ? renderSchedule()
     : view === 'students' ? renderStudents()
     : view === 'payments' ? renderPayments()
     : renderToday();
+  // Clear and set new content
+  container.innerHTML = '';
   container.innerHTML = `<div class="fade-enter">${body}</div>`;
   container.scrollTop = 0;
 
