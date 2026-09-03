@@ -857,12 +857,16 @@ function attachModalHandlers(){
 
 function attachHandlers(){
     // Fix: Attach nav handlers to the nav container directly
+// NAVIGATION - fixed to target the nav bar using event delegation
   const nav = document.getElementById('bottom-nav');
-  nav.querySelectorAll('[data-action="nav"]').forEach(el => el.addEventListener('click', () => { 
-    view = el.dataset.view; 
-    weekOffset = 0; 
-    render(); 
-  }));
+  nav.addEventListener('click', function(e) {
+    const button = e.target.closest('[data-action="nav"]');
+    if (button) {
+      view = button.dataset.view;
+      weekOffset = 0;
+      render();
+    }
+  });
   
   const container = document.getElementById('scroll-container');
   const back = container.querySelector('[data-action="back-students"]');
