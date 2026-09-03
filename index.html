@@ -671,7 +671,7 @@ function modalShell(title, bodyHtml, footerHtml){
   `;
 }
 function field(label, inputHtml){
-  return `<div class="mb-4"><label class="block text-sm font-medium text-soft mb-1.5">${label}</label>${inputHtml}</div>`;
+  return `<div class="mb-3"><label class="block text-sm font-medium text-soft mb-1.5">${label}</label>${inputHtml}</div>`;
 }
 
 /* ---- Student form ---- */
@@ -719,89 +719,186 @@ function studentFormModal(existing){
 }
 
 /* ---- Session form with multi-session and weekly repeat ---- */
+/* ---- Session form with multiple slots ---- */
 function sessionFormModal(existing){
   if(state.students.length === 0){ studentFormModal(null); return; }
-  const s = existing || { studentId: state.students[0].id, date: todayISO(), time: '15:00', duration: 60, subject: state.students[0].subjects[0], status: 'scheduled', recurring: false };
-  openModal(modalShell(existing ? 'Edit session' : 'Add sessions', `
-    <form id="session-form">
-      ${field('Student', `<select name="studentId" id="sess-student">${state.students.map(st => `<option value="${st.id}" ${s.studentId===st.id?'selected':''}>${st.name}</option>`).join('')}</select>`)}
-      ${field('Subject', `<select name="subject" id="sess-subject"></select>`)}
-      <div class="grid grid-cols-2 gap-3">
-        ${field('Start Date', `<input required name="date" type="date" value="${s.date}" />`)}
-        ${field('Time', `<input required name="time" type="time" value="${s.time}" />`)}
+  
+  let sessionSlots = existing ? [{
+    date: existing.date || todayISO(),
+    time: existing.time || '15:00',
+    duration: existing.duration || 60,
+    subject: existing.subject || state.students[0].subjects[0]
+  }] : [{
+    date: todayISO(),
+    time: '15:00',
+    duration: 60,
+    subject: state.students[0].subjects[0]
+  }];
+  
+  // If editing existing, just use that single session
+  const isEditing = !!existing;
+  
+  function renderModal() {
+    const slotsHtml = sessionSlots.map((slot, index) => `
+      <div class="session-slot" data-index="${index}" style="border-bottom: ${index < sessionSlots.length - 1 ? '1px solid var(--hairline)' : 'none'}; padding-bottom: ${index < sessionSlots.length - 1 ? '16px' : '0'}; margin-bottom: ${index < sessionSlots.length - 1 ? '16px' : '0'};">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm font-medium text-soft">Session ${index + 1}</span>
+          ${sessionSlots.length > 1 ? `<button type="button" data-remove-slot="${index}" class="press text-sm" style="color:var(--danger);">Remove</button>` : ''}
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          ${field('Date', `<input required name="date_${index}" type="date" value="${slot.date}" />`)}
+          ${field('Time', `<input required name="time_${index}" type="time" value="${slot.time}" />`)}
+        </div>
+        ${field('Duration (minutes)', `<input required name="duration_${index}" type="number" min="5" step="5" value="${slot.duration}" />`)}
+        ${field('Subject', `<select name="subject_${index}">${SUBJECT_NAMES.map(sub => `<option value="${sub}" ${sub===slot.subject?'selected':''}>${sub}</option>`).join('')}</select>`)}
       </div>
-      ${field('Duration (minutes)', `<input required name="duration" type="number" min="5" step="5" value="${s.duration}" />`)}
-      
-      ${existing ? '' : `
-        ${field('Number of sessions', `
-          <input name="sessionCount" type="number" min="1" max="52" value="1" placeholder="1" />
-          <p class="text-xs text-soft mt-1">How many sessions to create (e.g. 4 for a month of weekly lessons)</p>
-        `)}
-        
+    `).join('');
+    
+    const repeatHtml = !isEditing ? `
+      <div class="mt-3 pt-3" style="border-top: 1px solid var(--hairline);">
         ${field('Repeat weekly', `
           <div class="flex items-center gap-3">
             <label class="flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="recurring" value="true" /> Yes
-            </label>
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="recurring" value="false" checked /> No
+              <input type="checkbox" name="recurring" value="true" id="recurring-checkbox" /> 
+              <span class="text-sm">Repeat all sessions weekly</span>
             </label>
           </div>
-          <p class="text-xs text-soft mt-1">If yes, sessions will be scheduled weekly on the same day</p>
+          <p class="text-xs text-soft mt-1">If checked, each session will repeat every week on the same day</p>
         `)}
-      `}
-      
-      <button type="submit" class="btn-primary">${existing ? 'Save changes' : 'Create sessions'}</button>
-    </form>
-  `));
-  
-  function populateSubjects(){
-    const st = studentById(document.getElementById('sess-student').value);
-    const sel = document.getElementById('sess-subject');
-    sel.innerHTML = (st ? st.subjects : SUBJECT_NAMES).map(sub => `<option value="${sub}" ${sub===s.subject?'selected':''}>${sub}</option>`).join('');
-  }
-  populateSubjects();
-  document.getElementById('sess-student').addEventListener('change', populateSubjects);
-  
-  document.getElementById('session-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    const studentId = fd.get('studentId');
-    const subject = fd.get('subject');
-    const date = fd.get('date');
-    const time = fd.get('time');
-    const duration = parseInt(fd.get('duration'),10);
+        ${field('Number of weeks to repeat', `
+          <input name="repeatWeeks" type="number" min="1" max="52" value="4" id="repeat-weeks" disabled />
+          <p class="text-xs text-soft mt-1">How many weeks to repeat these sessions</p>
+        `)}
+      </div>
+    ` : '';
     
-    if(existing){
-      Object.assign(existing, { studentId, subject, date, time, duration });
-      saveData(); closeModal(); render();
-      return;
-    }
+    openModal(modalShell(isEditing ? 'Edit session' : 'Add sessions', `
+      <form id="session-form">
+        ${field('Student', `<select name="studentId" id="sess-student">${state.students.map(st => `<option value="${st.id}" ${existing && existing.studentId===st.id?'selected':''}>${st.name}</option>`).join('')}</select>`)}
+        
+        <div id="session-slots-container">
+          ${slotsHtml}
+        </div>
+        
+        ${!isEditing ? `
+          <button type="button" id="add-slot-btn" class="btn-outline mt-2">+ Add another session</button>
+        ` : ''}
+        
+        ${repeatHtml}
+        
+        <button type="submit" class="btn-primary mt-3">${isEditing ? 'Save changes' : 'Create sessions'}</button>
+      </form>
+    `));
     
-    const sessionCount = parseInt(fd.get('sessionCount'),10) || 1;
-    const recurring = fd.get('recurring') === 'true';
-    
-    const sessions = [];
-    for(let i = 0; i < sessionCount; i++) {
-      const sessionDate = i === 0 ? date : (recurring ? addWeeks(date, i) : addDays(date, i));
-      sessions.push({
-        id: uid(),
-        studentId: studentId,
-        subject: subject,
-        date: sessionDate,
-        time: time,
-        duration: duration,
-        status: 'scheduled',
-        recurring: recurring && i === 0,
-        note: recurring && sessionCount > 1 ? `Part of weekly series (${sessionCount} sessions)` : ''
+    // Handle add slot
+    const addBtn = document.getElementById('add-slot-btn');
+    if(addBtn) {
+      addBtn.addEventListener('click', () => {
+        const lastSlot = sessionSlots[sessionSlots.length - 1];
+        sessionSlots.push({
+          date: lastSlot.date,
+          time: lastSlot.time,
+          duration: lastSlot.duration,
+          subject: lastSlot.subject
+        });
+        renderModal();
       });
     }
     
-    state.sessions.push(...sessions);
-    saveData(); 
-    closeModal(); 
-    render();
-  });
+    // Handle remove slot
+    document.querySelectorAll('[data-remove-slot]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const index = parseInt(btn.dataset.removeSlot);
+        sessionSlots.splice(index, 1);
+        renderModal();
+      });
+    });
+    
+    // Handle repeat checkbox
+    const repeatCheckbox = document.getElementById('recurring-checkbox');
+    const repeatWeeks = document.getElementById('repeat-weeks');
+    if(repeatCheckbox && repeatWeeks) {
+      repeatCheckbox.addEventListener('change', () => {
+        repeatWeeks.disabled = !repeatCheckbox.checked;
+        repeatWeeks.style.opacity = repeatCheckbox.checked ? '1' : '0.5';
+      });
+    }
+    
+    // Handle form submit
+    document.getElementById('session-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const studentId = fd.get('studentId');
+      
+      if(isEditing) {
+        // Edit existing session
+        const slot = sessionSlots[0];
+        const sess = state.sessions.find(s => s.id === existing.id);
+        if(sess) {
+          Object.assign(sess, { 
+            studentId, 
+            subject: fd.get('subject_0'), 
+            date: fd.get('date_0'), 
+            time: fd.get('time_0'), 
+            duration: parseInt(fd.get('duration_0'),10) 
+          });
+          saveData(); closeModal(); render();
+        }
+        return;
+      }
+      
+      // Create multiple sessions
+      const sessions = [];
+      const recurring = fd.get('recurring') === 'true';
+      const repeatWeeksVal = parseInt(fd.get('repeatWeeks')) || 1;
+      
+      // For each slot
+      sessionSlots.forEach((slot, slotIndex) => {
+        const date = fd.get(`date_${slotIndex}`);
+        const time = fd.get(`time_${slotIndex}`);
+        const duration = parseInt(fd.get(`duration_${slotIndex}`),10);
+        const subject = fd.get(`subject_${slotIndex}`);
+        
+        if(recurring) {
+          // Create repeated sessions for this slot
+          for(let w = 0; w < repeatWeeksVal; w++) {
+            const sessionDate = w === 0 ? date : addWeeks(date, w);
+            sessions.push({
+              id: uid(),
+              studentId: studentId,
+              subject: subject,
+              date: sessionDate,
+              time: time,
+              duration: duration,
+              status: 'scheduled',
+              recurring: w === 0 && repeatWeeksVal > 1,
+              note: recurring && repeatWeeksVal > 1 ? `Part of weekly series (${repeatWeeksVal} weeks)` : ''
+            });
+          }
+        } else {
+          // Just add the single session
+          sessions.push({
+            id: uid(),
+            studentId: studentId,
+            subject: subject,
+            date: date,
+            time: time,
+            duration: duration,
+            status: 'scheduled',
+            recurring: false,
+            note: ''
+          });
+        }
+      });
+      
+      state.sessions.push(...sessions);
+      saveData(); 
+      closeModal(); 
+      render();
+    });
+  }
+  
+  renderModal();
 }
 
 /* ---- Session actions ---- */
