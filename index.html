@@ -8,6 +8,9 @@
   <meta name="apple-mobile-web-app-title" content="Ledger" />
   <meta name="theme-color" content="#F1F0EA" />
   <title>Ledger — Teaching Schedule</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -41,7 +44,6 @@
     ::-webkit-scrollbar { display: none; }
     .press:active { transform: scale(0.96); opacity: 0.7; transition: 0.06s; }
 
-    /* --- inputs --- */
     input, textarea, select {
       background: var(--paper-raised);
       border: 1.5px solid var(--hairline-strong);
@@ -66,7 +68,6 @@
       padding-right: 48px;
     }
 
-    /* --- cards & buttons --- */
     .card {
       background: var(--paper-raised);
       border: 1.5px solid var(--hairline);
@@ -110,14 +111,12 @@
     }
     .btn-close:active { transform: scale(0.9); opacity: 0.6; }
 
-    /* --- modals --- */
     .modal-enter { animation: slideUp .26s cubic-bezier(0.16, 1, 0.3, 1); }
     @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     .fade-enter { animation: fadeIn .18s ease; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     @media (prefers-reduced-motion: reduce) { .modal-enter, .fade-enter { animation: none; } }
 
-    /* --- bottom nav --- */
     .bottom-nav {
       padding-bottom: env(safe-area-inset-bottom, 12px);
       background: var(--paper-raised);
@@ -137,7 +136,6 @@
     }
     .nav-btn:active { opacity: 0.6; }
 
-    /* --- stats --- */
     .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
     .stat-card {
       padding: 16px 12px;
@@ -147,8 +145,7 @@
       text-align: center;
     }
 
-    /* --- list items --- */
-    .session-row {
+    .session-row, .student-item {
       background: var(--paper-raised);
       border: 1.5px solid var(--hairline);
       border-radius: var(--radius);
@@ -157,17 +154,7 @@
       align-items: center;
       gap: 14px;
     }
-    .student-item {
-      background: var(--paper-raised);
-      border: 1.5px solid var(--hairline);
-      border-radius: var(--radius);
-      padding: 16px 16px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
 
-    /* --- utilities --- */
     .w-full { width: 100%; }
     .max-w-md { max-width: 520px; margin-left: auto; margin-right: auto; }
     .min-h-screen { min-height: 100vh; min-height: -webkit-fill-available; }
@@ -176,24 +163,18 @@
     .flex-1 { flex: 1; }
     .items-center { align-items: center; }
     .justify-between { justify-content: space-between; }
-    .gap-1 { gap: 6px; }
     .gap-2 { gap: 10px; }
     .gap-3 { gap: 14px; }
-    .gap-4 { gap: 18px; }
     .mt-1 { margin-top: 6px; }
     .mt-2 { margin-top: 10px; }
     .mt-3 { margin-top: 14px; }
     .mt-4 { margin-top: 18px; }
-    .mb-1 { margin-bottom: 6px; }
     .mb-2 { margin-bottom: 10px; }
     .mb-3 { margin-bottom: 14px; }
     .mb-4 { margin-bottom: 18px; }
     .mb-5 { margin-bottom: 22px; }
     .mb-6 { margin-bottom: 28px; }
-    .px-4 { padding-left: 16px; padding-right: 16px; }
     .px-5 { padding-left: 20px; padding-right: 20px; }
-    .py-2 { padding-top: 8px; padding-bottom: 8px; }
-    .pt-3 { padding-top: 12px; }
     .pt-4 { padding-top: 16px; }
     .pb-24 { padding-bottom: 100px; }
     .text-center { text-align: center; }
@@ -212,231 +193,837 @@
     .border-dashed { border-style: dashed; }
     .rounded-xl { border-radius: var(--radius); }
     .rounded-full { border-radius: 9999px; }
-    .cursor-pointer { cursor: pointer; }
-    .select-none { user-select: none; }
     .bg-ink { background: var(--ink); color: var(--paper); }
     .text-ink-soft { color: var(--ink-soft); }
     .text-sm { font-size: 14px; }
     .text-xs { font-size: 12px; }
-    .text-lg { font-size: 20px; }
     .font-medium { font-weight: 500; }
     .font-semibold { font-weight: 600; }
     .leading-none { line-height: 1.1; }
-    .leading-snug { line-height: 1.5; }
-    .tabular-nums { font-variant-numeric: tabular-nums; }
   </style>
 </head>
 <body>
-<div id="app" class="max-w-md min-h-screen flex flex-col relative pb-24"></div>
-<div id="modal-root"></div>
+<div id="root"></div>
 
-<script>
-/* ========== DATA ========== */
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef } = React;
+
+// ========== DATA LAYER ==========
+const STORAGE_KEY = 'ledger-data-react';
 let state = { students: [], sessions: [], payments: [] };
 let loaded = false;
-let view = 'today';
-let weekOffset = 0;
-let openStudentId = null;
-function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
-const STORAGE_KEY = 'ledger-data';
 
-function loadData(){
-  try{ const raw=localStorage.getItem(STORAGE_KEY); if(raw) state=JSON.parse(raw); }catch(e){}
-  loaded=true; render();
-}
-let saveTimer=null;
-function saveData(){
-  clearTimeout(saveTimer);
-  saveTimer=setTimeout(()=>{ try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(state)); }catch(e){} },120);
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) state = JSON.parse(raw);
+  } catch(e) {}
+  loaded = true;
+  return state;
 }
 
-function fmtMoney(n){ const v=Math.round((n+Number.EPSILON)*100)/100; return (v<0?'-$':'$')+Math.abs(v).toFixed(2); }
-function pad(n){ return n.toString().padStart(2,'0'); }
-function todayISO(){ const d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
-function isoToDate(iso){ const [y,m,d]=iso.split('-').map(Number); return new Date(y,m-1,d); }
-function dateToISO(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
-function addDays(iso,n){ const d=isoToDate(iso); d.setDate(d.getDate()+n); return dateToISO(d); }
-function dayLabel(iso, opts){ const d=isoToDate(iso); const w=d.toLocaleDateString('en-AU',{weekday:opts?.short?'short':'long'}); const md=d.toLocaleDateString('en-AU',{day:'numeric',month:'short'}); return {weekday:w, md}; }
-function time12(t){ if(!t) return ''; let [h,m]=t.split(':').map(Number); const ap=h>=12?'pm':'am'; h=h%12; if(h===0) h=12; return h+(m?':'+pad(m):'')+ap; }
-function startOfWeek(iso){ const d=isoToDate(iso); const dow=d.getDay(); const diff=(dow===0?-6:1)-dow; d.setDate(d.getDate()+diff); return dateToISO(d); }
-function studentById(id){ return state.students.find(s=>s.id===id); }
-function sessionCost(session){
-  const st=studentById(session.studentId); if(!st) return 0;
-  return (st.rate||0) * (session.duration||0) / 60;
-}
-function studentBalance(studentId){
-  const earned=state.sessions.filter(s=>s.studentId===studentId && s.status==='completed').reduce((sum,s)=>sum+sessionCost(s),0);
-  const paid=state.payments.filter(p=>p.studentId===studentId).reduce((sum,p)=>sum+p.amount,0);
-  return earned-paid;
-}
-function totalOutstanding(){ return state.students.reduce((sum,s)=>sum+Math.max(0,studentBalance(s.id)),0); }
-function hoursThisWeek(){
-  const start=startOfWeek(todayISO()), end=addDays(start,6);
-  return state.sessions.filter(s=>s.date>=start&&s.date<=end&&s.status!=='cancelled').reduce((sum,s)=>sum+(s.duration||0),0)/60;
-}
-function escapeHtml(str){ const d=document.createElement('div'); d.textContent=str||''; return d.innerHTML; }
-
-/* ========== RENDER ========== */
-function render(){
-  const app=document.getElementById('app');
-  if(!loaded){ app.innerHTML=''; return; }
-  const body = view==='student' ? renderStudentDetail(openStudentId)
-    : view==='schedule' ? renderSchedule()
-    : view==='students' ? renderStudents()
-    : view==='payments' ? renderPayments()
-    : renderToday();
-  // header is inside the main flow, not sticky, to avoid clipping
-  app.innerHTML = `<div class="px-5 pt-4 pb-1">${renderHeader()}</div><div class="flex-1 px-5 pb-6 fade-enter">${body}</div>${renderTabBar()}`;
-  attachHandlers();
+function saveData(data) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch(e) {}
 }
 
-function renderHeader(){
-  if(view==='student'){
-    const s=studentById(openStudentId);
-    if(!s){ view='students'; return renderHeader(); }
-    return `<button data-action="back-students" class="press text-[16px] text-ink-soft flex items-center gap-2" style="font-weight:500;"><span style="font-size:24px;">←</span> Students</button>`;
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+function fmtMoney(n) {
+  const v = Math.round((n + Number.EPSILON) * 100) / 100;
+  return (v < 0 ? '-$' : '$') + Math.abs(v).toFixed(2);
+}
+
+function pad(n) { return n.toString().padStart(2, '0'); }
+function todayISO() {
+  const d = new Date();
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+
+function isoToDate(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function dateToISO(d) {
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+
+function addDays(iso, n) {
+  const d = isoToDate(iso);
+  d.setDate(d.getDate() + n);
+  return dateToISO(d);
+}
+
+function startOfWeek(iso) {
+  const d = isoToDate(iso);
+  const dow = d.getDay();
+  const diff = (dow === 0 ? -6 : 1) - dow;
+  d.setDate(d.getDate() + diff);
+  return dateToISO(d);
+}
+
+function dayLabel(iso, opts) {
+  const d = isoToDate(iso);
+  const w = d.toLocaleDateString('en-AU', { weekday: opts?.short ? 'short' : 'long' });
+  const md = d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+  return { weekday: w, md };
+}
+
+function time12(t) {
+  if (!t) return '';
+  let [h, m] = t.split(':').map(Number);
+  const ap = h >= 12 ? 'pm' : 'am';
+  h = h % 12;
+  if (h === 0) h = 12;
+  return h + (m ? ':' + pad(m) : '') + ap;
+}
+
+function studentById(data, id) { return data.students.find(s => s.id === id); }
+
+function sessionCost(data, session) {
+  const st = studentById(data, session.studentId);
+  if (!st) return 0;
+  return (st.rate || 0) * (session.duration || 0) / 60;
+}
+
+function studentBalance(data, studentId) {
+  const earned = data.sessions.filter(s => s.studentId === studentId && s.status === 'completed')
+    .reduce((sum, s) => sum + sessionCost(data, s), 0);
+  const paid = data.payments.filter(p => p.studentId === studentId)
+    .reduce((sum, p) => sum + p.amount, 0);
+  return earned - paid;
+}
+
+function totalOutstanding(data) {
+  return data.students.reduce((sum, s) => sum + Math.max(0, studentBalance(data, s.id)), 0);
+}
+
+function hoursThisWeek(data) {
+  const start = startOfWeek(todayISO());
+  const end = addDays(start, 6);
+  return data.sessions.filter(s => s.date >= start && s.date <= end && s.status !== 'cancelled')
+    .reduce((sum, s) => sum + (s.duration || 0), 0) / 60;
+}
+
+function getRecurringSessions(data, session) {
+  if (!session.recurring || session.recurring === 'none') return [];
+  const days = session.recurring === 'weekly' ? 7 : 14;
+  const results = [];
+  let current = addDays(session.date, days);
+  for (let i = 0; i < 4; i++) {
+    results.push({ ...session, id: uid() + '-recur', date: current, recurring: 'none', isRecurring: true });
+    current = addDays(current, days);
   }
-  const titles={ today:'Today', schedule:'Schedule', students:'Students', payments:'Payments' };
-  const d=new Date();
-  const dateStr=d.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'});
-  return `<div class="flex items-end justify-between"><div><h1 class="serif text-[34px] leading-none">${titles[view]}</h1>${view==='today'?`<p class="text-[15px] mt-1 text-ink-soft">${dateStr}</p>`:''}</div></div>`;
+  return results;
 }
 
-function renderTabBar(){
-  const tabs=[{id:'today',label:'Today'},{id:'schedule',label:'Schedule'},{id:'students',label:'Students'},{id:'payments',label:'Payments'}];
-  const active=view==='student'?'students':view;
-  return `<div class="fixed bottom-0 left-0 right-0 z-20 bottom-nav"><div class="max-w-md mx-auto flex">${tabs.map(t=>`<button data-action="nav" data-view="${t.id}" class="nav-btn" style="color:${active===t.id?'var(--ink)':'var(--ink-soft)'};font-weight:${active===t.id?'600':'400'};">${t.label}</button>`).join('')}</div></div>`;
+// ========== APP ==========
+function App() {
+  const [data, setData] = useState(() => loadData());
+  const [view, setView] = useState('today');
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [openStudentId, setOpenStudentId] = useState(null);
+  const [modal, setModal] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  useEffect(() => {
+    saveData(data);
+  }, [data]);
+
+  const addStudent = useCallback((student) => {
+    setData(prev => ({
+      ...prev,
+      students: [...prev.students, { id: uid(), generalNotes: [], ...student }]
+    }));
+  }, []);
+
+  const updateStudent = useCallback((id, updates) => {
+    setData(prev => ({
+      ...prev,
+      students: prev.students.map(s => s.id === id ? { ...s, ...updates } : s)
+    }));
+  }, []);
+
+  const deleteStudent = useCallback((id) => {
+    if (!confirm('Delete this student and all their data?')) return;
+    setData(prev => ({
+      students: prev.students.filter(s => s.id !== id),
+      sessions: prev.sessions.filter(s => s.studentId !== id),
+      payments: prev.payments.filter(p => p.studentId !== id)
+    }));
+    setView('students');
+    setOpenStudentId(null);
+  }, []);
+
+  const addSession = useCallback((session) => {
+    const newSession = { id: uid(), status: 'scheduled', note: '', ...session };
+    const recurringSessions = session.recurring && session.recurring !== 'none'
+      ? getRecurringSessions(data, newSession)
+      : [];
+    setData(prev => ({
+      ...prev,
+      sessions: [...prev.sessions, newSession, ...recurringSessions]
+    }));
+  }, [data]);
+
+  const updateSession = useCallback((id, updates) => {
+    setData(prev => ({
+      ...prev,
+      sessions: prev.sessions.map(s => s.id === id ? { ...s, ...updates } : s)
+    }));
+  }, []);
+
+  const deleteSession = useCallback((id) => {
+    if (!confirm('Delete this session?')) return;
+    setData(prev => ({
+      ...prev,
+      sessions: prev.sessions.filter(s => s.id !== id)
+    }));
+  }, []);
+
+  const addPayment = useCallback((payment) => {
+    setData(prev => ({
+      ...prev,
+      payments: [...prev.payments, { id: uid(), ...payment }]
+    }));
+  }, []);
+
+  const addNote = useCallback((studentId, text) => {
+    setData(prev => ({
+      ...prev,
+      students: prev.students.map(s => {
+        if (s.id !== studentId) return s;
+        const notes = s.generalNotes || [];
+        return { ...s, generalNotes: [...notes, { id: uid(), date: todayISO(), text }] };
+      })
+    }));
+  }, []);
+
+  const openModal = useCallback((content) => setModal(content), []);
+  const closeModal = useCallback(() => setModal(null), []);
+
+  const showToast = useCallback((msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2000);
+  }, []);
+
+  // Navigation
+  const navigateTo = useCallback((newView) => {
+    if (newView === 'student') return;
+    setView(newView);
+    setWeekOffset(0);
+    setOpenStudentId(null);
+  }, []);
+
+  const openStudent = useCallback((id) => {
+    setOpenStudentId(id);
+    setView('student');
+  }, []);
+
+  // ========== RENDER HELPERS ==========
+  const renderHeader = () => {
+    if (view === 'student') {
+      const s = studentById(data, openStudentId);
+      if (!s) { setView('students'); return null; }
+      return (
+        <button onClick={() => { setView('students'); setOpenStudentId(null); }} 
+          className="press text-[16px] text-ink-soft flex items-center gap-2" style={{ fontWeight: 500 }}>
+          <span style={{ fontSize: 24 }}>←</span> Students
+        </button>
+      );
+    }
+    const titles = { today: 'Today', schedule: 'Schedule', students: 'Students', payments: 'Payments' };
+    const d = new Date();
+    const dateStr = d.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' });
+    return (
+      <div className="flex items-end justify-between">
+        <div>
+          <h1 className="serif" style={{ fontSize: 34, lineHeight: 1.1 }}>{titles[view]}</h1>
+          {view === 'today' && <p className="text-[15px] mt-1 text-ink-soft">{dateStr}</p>}
+        </div>
+      </div>
+    );
+  };
+
+  const renderTabBar = () => {
+    const tabs = [
+      { id: 'today', label: 'Today' },
+      { id: 'schedule', label: 'Schedule' },
+      { id: 'students', label: 'Students' },
+      { id: 'payments', label: 'Payments' }
+    ];
+    const active = view === 'student' ? 'students' : view;
+    return (
+      <div className="fixed bottom-0 left-0 right-0 z-20 bottom-nav">
+        <div className="max-w-md mx-auto flex">
+          {tabs.map(t => (
+            <button key={t.id} onClick={() => navigateTo(t.id)} className="nav-btn"
+              style={{ color: active === t.id ? 'var(--ink)' : 'var(--ink-soft)', fontWeight: active === t.id ? 600 : 400 }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // ========== VIEWS ==========
+  const renderToday = () => {
+    const today = todayISO();
+    const sessions = data.sessions.filter(s => s.date === today).sort((a, b) => a.time.localeCompare(b.time));
+    const out = totalOutstanding(data);
+    const hrs = hoursThisWeek(data);
+
+    return (
+      <>
+        <div className="stat-grid mb-4">
+          <StatCard value={sessions.length} label="sessions" />
+          <StatCard value={hrs.toFixed(1)} label="hrs this week" />
+          <StatCard value={fmtMoney(out)} label="owed" color={out > 0 ? 'var(--danger)' : 'var(--ink)'} />
+        </div>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[15px] text-ink-soft font-medium">Today's sessions</span>
+          <button onClick={() => openModal(<AddSessionModal data={data} onAdd={addSession} onClose={closeModal} />)} 
+            className="press text-[15px] font-semibold" style={{ color: 'var(--ink)' }}>+ Add</button>
+        </div>
+        {sessions.length === 0 ? (
+          <EmptyState title="Nothing today" sub="Add a session" action={() => openModal(<AddSessionModal data={data} onAdd={addSession} onClose={closeModal} />)} />
+        ) : (
+          <div className="space-y-2">
+            {sessions.map(s => <SessionRow key={s.id} data={data} session={s} onOpen={() => openModal(<SessionModal data={data} session={s} onUpdate={updateSession} onDelete={deleteSession} onClose={closeModal} />)} />)}
+          </div>
+        )}
+      </>
+    );
+  };
+
+  const renderSchedule = () => {
+    const base = addDays(startOfWeek(todayISO()), weekOffset * 7);
+    const days = Array.from({ length: 7 }, (_, i) => addDays(base, i));
+    const weekEnd = days[6];
+    const label = weekOffset === 0 ? 'This week' : 
+      isoToDate(base).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) + ' – ' + 
+      isoToDate(weekEnd).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+
+    return (
+      <>
+        <div className="flex items-center justify-between mb-4">
+          <button onClick={() => setWeekOffset(w => w - 1)} className="press text-[28px] px-3 text-ink-soft">←</button>
+          <div className="text-[17px] font-medium">{label}</div>
+          <button onClick={() => setWeekOffset(w => w + 1)} className="press text-[28px] px-3 text-ink-soft">→</button>
+        </div>
+        {days.map(iso => {
+          const daySessions = data.sessions.filter(s => s.date === iso).sort((a, b) => a.time.localeCompare(b.time));
+          const { weekday, md } = dayLabel(iso, { short: true });
+          const isToday = iso === todayISO();
+          return (
+            <div key={iso} className="mb-4">
+              <div className="flex items-baseline gap-2 mb-2">
+                <span className="text-[16px] font-medium" style={{ color: isToday ? 'var(--ink)' : 'var(--ink-soft)' }}>{weekday}</span>
+                <span className="text-[14px] text-ink-soft">{md}</span>
+                {isToday && <span className="w-2 h-2 rounded-full" style={{ background: 'var(--ink)' }}></span>}
+              </div>
+              {daySessions.length === 0 ? (
+                <p className="text-[15px] text-[#B4B3A6]">—</p>
+              ) : (
+                <div className="space-y-2">
+                  {daySessions.map(s => <SessionRow key={s.id} data={data} session={s} onOpen={() => openModal(<SessionModal data={data} session={s} onUpdate={updateSession} onDelete={deleteSession} onClose={closeModal} />)} />)}
+                </div>
+              )}
+            </div>
+          );
+        })}
+        <button onClick={() => openModal(<AddSessionModal data={data} onAdd={addSession} onClose={closeModal} />)} 
+          className="btn btn-outline w-full mt-2">+ Add session</button>
+      </>
+    );
+  };
+
+  const renderStudents = () => {
+    const students = [...data.students].sort((a, b) => a.name.localeCompare(b.name));
+    if (!students.length) {
+      return <EmptyState title="No students yet" sub="Add your first student" action={() => openModal(<AddStudentModal onAdd={addStudent} onClose={closeModal} />)} />;
+    }
+    return (
+      <>
+        <div className="space-y-2 mb-4">
+          {students.map(s => {
+            const bal = studentBalance(data, s.id);
+            return (
+              <div key={s.id} onClick={() => openStudent(s.id)} className="student-item press">
+                <div className="flex-1 min-w-0">
+                  <div className="text-[17px] font-medium truncate">{s.name}</div>
+                  <div className="text-[14px] text-ink-soft mt-0.5">{fmtMoney(s.rate)}/hr</div>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="text-[17px] tabular font-medium" style={{ color: bal > 0 ? 'var(--danger)' : 'var(--ink-soft)' }}>
+                    {fmtMoney(Math.max(bal, 0))}
+                  </div>
+                  <div className="text-[12px] text-ink-soft">{bal > 0 ? 'owed' : 'settled'}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <button onClick={() => openModal(<AddStudentModal onAdd={addStudent} onClose={closeModal} />)} 
+          className="btn btn-outline w-full">+ Add student</button>
+      </>
+    );
+  };
+
+  const renderStudentDetail = () => {
+    const s = studentById(data, openStudentId);
+    if (!s) return null;
+    const sessions = data.sessions.filter(x => x.studentId === s.id).sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+    const payments = data.payments.filter(x => x.studentId === s.id).sort((a, b) => b.date.localeCompare(a.date));
+    const bal = studentBalance(data, s.id);
+    const notes = s.generalNotes || [];
+    const unpaidSessions = sessions.filter(ss => ss.status === 'completed' && studentBalance(data, s.id) > 0.01);
+
+    return (
+      <>
+        <div className="mb-5">
+          <h2 className="serif text-[32px] leading-none mb-1">{s.name}</h2>
+          <p className="text-[15px] text-ink-soft">{fmtMoney(s.rate)}/hr{s.phone ? ' · ' + s.phone : ''}</p>
+          <div className="flex gap-2 mt-4">
+            <button onClick={() => openModal(<AddStudentModal student={s} onAdd={updateStudent} onClose={closeModal} />)} 
+              className="btn btn-outline flex-1">Edit</button>
+            <button onClick={() => openModal(<AddPaymentModal data={data} studentId={s.id} onAdd={addPayment} onClose={closeModal} />)} 
+              className="btn flex-1">Log payment</button>
+          </div>
+        </div>
+        <div className="card mb-4 flex items-center justify-between">
+          <span className="text-[15px] text-ink-soft">Balance</span>
+          <span className="serif text-[28px] tabular" style={{ color: bal > 0 ? 'var(--danger)' : 'var(--ink)' }}>
+            {fmtMoney(bal)}
+          </span>
+        </div>
+        {unpaidSessions.length > 0 && (
+          <div className="mb-4">
+            <span className="text-[14px] text-ink-soft font-medium">Unpaid sessions ({unpaidSessions.length})</span>
+            <div className="space-y-2 mt-2">
+              {unpaidSessions.slice(0, 3).map(s => <SessionRow key={s.id} data={data} session={s} onOpen={() => openModal(<SessionModal data={data} session={s} onUpdate={updateSession} onDelete={deleteSession} onClose={closeModal} />)} />)}
+              {unpaidSessions.length > 3 && <p className="text-[13px] text-ink-soft">+{unpaidSessions.length - 3} more</p>}
+            </div>
+          </div>
+        )}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[14px] text-ink-soft font-medium">Notes</span>
+            <button onClick={() => openModal(<AddNoteModal studentId={s.id} onAdd={addNote} onClose={closeModal} />)} 
+              className="press text-[15px] font-semibold">+ Add</button>
+          </div>
+          {notes.length === 0 ? (
+            <p className="text-[15px] text-[#B4B3A6]">No notes.</p>
+          ) : (
+            <div className="space-y-2">
+              {notes.slice().reverse().map(n => (
+                <div key={n.id} className="card">
+                  <p className="text-[15px] leading-snug">{n.text}</p>
+                  <p className="text-[12px] mt-1 text-ink-soft">{isoToDate(n.date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="mb-4">
+          <span className="text-[14px] text-ink-soft font-medium">Session history</span>
+          {sessions.length === 0 ? (
+            <p className="text-[15px] text-[#B4B3A6] mt-2">No sessions.</p>
+          ) : (
+            <div className="space-y-2 mt-2">
+              {sessions.slice(0, 5).map(s => <SessionRow key={s.id} data={data} session={s} onOpen={() => openModal(<SessionModal data={data} session={s} onUpdate={updateSession} onDelete={deleteSession} onClose={closeModal} />)} />)}
+              {sessions.length > 5 && <p className="text-[13px] text-ink-soft">+{sessions.length - 5} more</p>}
+            </div>
+          )}
+        </div>
+        <div>
+          <span className="text-[14px] text-ink-soft font-medium">Payment history</span>
+          {payments.length === 0 ? (
+            <p className="text-[15px] text-[#B4B3A6] mt-2">No payments.</p>
+          ) : (
+            <div className="space-y-2 mt-2">
+              {payments.slice(0, 5).map(p => (
+                <div key={p.id} className="card flex items-center justify-between">
+                  <div>
+                    <div className="text-[15px]">{p.method || 'Payment'}</div>
+                    <div className="text-[13px] mt-0.5 text-ink-soft">
+                      {isoToDate(p.date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}
+                      {p.note ? ' · ' + p.note : ''}
+                    </div>
+                  </div>
+                  <div className="text-[16px] tabular font-medium">{fmtMoney(p.amount)}</div>
+                </div>
+              ))}
+              {payments.length > 5 && <p className="text-[13px] text-ink-soft">+{payments.length - 5} more</p>}
+            </div>
+          )}
+        </div>
+      </>
+    );
+  };
+
+  const renderPayments = () => {
+    const owing = data.students.map(s => ({ s, bal: studentBalance(data, s.id) }))
+      .filter(x => x.bal > 0.004).sort((a, b) => b.bal - a.bal);
+    const allPayments = [...data.payments].sort((a, b) => b.date.localeCompare(a.date));
+
+    return (
+      <>
+        {owing.length > 0 && (
+          <div className="mb-4">
+            <span className="text-[15px] text-ink-soft font-medium">Outstanding</span>
+            <div className="space-y-2 mt-2">
+              {owing.map(({ s, bal }) => (
+                <div key={s.id} onClick={() => openStudent(s.id)} className="card press flex items-center justify-between">
+                  <span className="text-[16px]">{s.name}</span>
+                  <span className="text-[17px] tabular font-medium" style={{ color: 'var(--danger)' }}>{fmtMoney(bal)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {allPayments.length === 0 ? (
+          <EmptyState title="No payments" sub="Log a payment" action={() => openModal(<AddPaymentModal data={data} onAdd={addPayment} onClose={closeModal} />)} />
+        ) : (
+          <>
+            <span className="text-[15px] text-ink-soft font-medium">History</span>
+            <div className="space-y-2 mt-2">
+              {allPayments.slice(0, 10).map(p => {
+                const s = studentById(data, p.studentId);
+                return (
+                  <div key={p.id} className="card flex items-center justify-between">
+                    <div>
+                      <div className="text-[15px]">{s ? s.name : 'Unknown'}</div>
+                      <div className="text-[13px] mt-0.5 text-ink-soft">
+                        {isoToDate(p.date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}
+                        {p.method ? ' · ' + p.method : ''}
+                      </div>
+                    </div>
+                    <div className="text-[16px] tabular font-medium">{fmtMoney(p.amount)}</div>
+                  </div>
+                );
+              })}
+              {allPayments.length > 10 && <p className="text-[13px] text-ink-soft">+{allPayments.length - 10} more</p>}
+            </div>
+            <button onClick={() => openModal(<AddPaymentModal data={data} onAdd={addPayment} onClose={closeModal} />)} 
+              className="btn btn-outline w-full mt-4">+ Log payment</button>
+          </>
+        )}
+      </>
+    );
+  };
+
+  // ========== MAIN RENDER ==========
+  let body;
+  if (view === 'student') body = renderStudentDetail();
+  else if (view === 'schedule') body = renderSchedule();
+  else if (view === 'students') body = renderStudents();
+  else if (view === 'payments') body = renderPayments();
+  else body = renderToday();
+
+  return (
+    <div className="max-w-md min-h-screen flex flex-col relative pb-24">
+      <div className="px-5 pt-4 pb-1">{renderHeader()}</div>
+      <div className="flex-1 px-5 pb-6 fade-enter">{body}</div>
+      {renderTabBar()}
+      {modal && (
+        <div className="fixed inset-0 z-30 flex items-end fade-enter" style={{ background: 'rgba(28,35,33,0.3)' }}>
+          <div className="modal-enter w-full max-w-md mx-auto rounded-t-3xl max-h-[90vh] overflow-y-auto" 
+            style={{ background: 'var(--paper)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+            {modal}
+          </div>
+        </div>
+      )}
+      {toast && (
+        <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-40 px-6 py-3 rounded-full" 
+          style={{ background: 'var(--ink)', color: 'var(--paper)', fontSize: 15 }}>
+          {toast}
+        </div>
+      )}
+    </div>
+  );
 }
 
-/* ---- today ---- */
-function renderToday(){
-  const today=todayISO();
-  const sessions=state.sessions.filter(s=>s.date===today).sort((a,b)=>a.time.localeCompare(b.time));
-  const out=totalOutstanding(), hrs=hoursThisWeek();
-  const stats=`<div class="stat-grid mb-4">${statCard(sessions.length,'sessions')}${statCard(hrs.toFixed(1),'hrs this week')}${statCard(fmtMoney(out),'owed',out>0?'var(--danger)':'var(--ink)')}</div>`;
-  const list=sessions.length===0?emptyState('Nothing today','Add a session','add-session'):`<div class="space-y-2">${sessions.map(sessionRow).join('')}</div>`;
-  return `${stats}<div class="flex items-center justify-between mb-2"><span class="text-[15px] text-ink-soft font-medium">Today's sessions</span><button data-action="add-session" class="press text-[15px] font-semibold" style="color:var(--ink);">+ Add</button></div>${list}`;
-}
-function statCard(value,label,color){ return `<div class="stat-card"><div class="serif text-[28px] tabular leading-none" style="color:${color||'var(--ink)'};">${value}</div><div class="text-[13px] mt-1 text-ink-soft">${label}</div></div>`; }
-function emptyState(title,sub,action){ return `<div class="card border-dashed py-10 px-4 text-center"><p class="serif text-[20px] mb-1">${title}</p><p class="text-[15px] mb-4 text-ink-soft">${sub}</p><button data-action="${action}" class="btn">+ Add</button></div>`; }
-function sessionRow(s){
-  const st=studentById(s.studentId); if(!st) return '';
-  const done=s.status==='completed', cancelled=s.status==='cancelled';
-  const unpaid = s.status==='completed' && studentBalance(s.studentId) > 0.01;
-  return `<div data-action="open-session" data-id="${s.id}" class="session-row" style="opacity:${cancelled?0.5:1};"><div class="flex-1 min-w-0"><div class="flex items-baseline gap-2"><span class="text-[17px] font-medium truncate">${st.name}</span>${unpaid?`<span class="text-[11px] px-2 py-0.5 rounded-full" style="background:var(--danger);color:white;font-weight:500;">unpaid</span>`:''}</div><div class="text-[14px] mt-0.5 text-ink-soft">${time12(s.time)} · ${s.duration}min${cancelled?' · cancelled':''}</div></div>${done?`<span class="text-[12px] px-3 py-1 rounded-full shrink-0" style="background:var(--ink);color:white;font-weight:500;">Done</span>`:''}</div>`;
+// ========== COMPONENTS ==========
+function StatCard({ value, label, color }) {
+  return (
+    <div className="stat-card">
+      <div className="serif text-[28px] tabular leading-none" style={{ color: color || 'var(--ink)' }}>{value}</div>
+      <div className="text-[13px] mt-1 text-ink-soft">{label}</div>
+    </div>
+  );
 }
 
-/* ---- schedule ---- */
-function renderSchedule(){
-  const base=addDays(startOfWeek(todayISO()),weekOffset*7);
-  const days=Array.from({length:7},(_,i)=>addDays(base,i));
-  const weekEnd=days[6];
-  const label=weekOffset===0?'This week':(isoToDate(base).toLocaleDateString('en-AU',{day:'numeric',month:'short'})+''+isoToDate(weekEnd).toLocaleDateString('en-AU',{day:'numeric',month:'short'}));
-  const rows=days.map(iso=>{
-    const daySessions=state.sessions.filter(s=>s.date===iso).sort((a,b)=>a.time.localeCompare(b.time));
-    const {weekday,md}=dayLabel(iso,{short:true});
-    const isToday=iso===todayISO();
-    return `<div class="mb-4"><div class="flex items-baseline gap-2 mb-2"><span class="text-[16px] font-medium" style="color:${isToday?'var(--ink)':'var(--ink-soft)'};">${weekday}</span><span class="text-[14px] text-ink-soft">${md}</span>${isToday?`<span class="w-2 h-2 rounded-full" style="background:var(--ink);"></span>`:''}</div>${daySessions.length===0?`<p class="text-[15px] text-[#B4B3A6]">—</p>`:`<div class="space-y-2">${daySessions.map(sessionRow).join('')}</div>`}</div>`;
-  }).join('');
-  return `<div class="flex items-center justify-between mb-4"><button data-action="week-prev" class="press text-[28px] px-3 text-ink-soft">←</button><div class="text-[17px] font-medium">${label}</div><button data-action="week-next" class="press text-[28px] px-3 text-ink-soft">→</button></div>${rows}<button data-action="add-session" class="btn btn-outline w-full mt-2">+ Add session</button>`;
+function EmptyState({ title, sub, action }) {
+  return (
+    <div className="card border-dashed py-10 px-4 text-center">
+      <p className="serif text-[20px] mb-1">{title}</p>
+      <p className="text-[15px] mb-4 text-ink-soft">{sub}</p>
+      <button onClick={action} className="btn">+ Add</button>
+    </div>
+  );
 }
 
-/* ---- students ---- */
-function renderStudents(){
-  const students=[...state.students].sort((a,b)=>a.name.localeCompare(b.name));
-  if(!students.length) return emptyState('No students yet','Add your first student','add-student');
-  return `<div class="space-y-2 mb-4">${students.map(s=>{const bal=studentBalance(s.id);return `<div data-action="open-student" data-id="${s.id}" class="student-item"><div class="flex-1 min-w-0"><div class="text-[17px] font-medium truncate">${s.name}</div><div class="text-[14px] text-ink-soft mt-0.5">${fmtMoney(s.rate)}/hr</div></div><div class="text-right shrink-0"><div class="text-[17px] tabular font-medium" style="color:${bal>0?'var(--danger)':'var(--ink-soft)'};">${fmtMoney(Math.max(bal,0))}</div><div class="text-[12px] text-ink-soft">${bal>0?'owed':'settled'}</div></div></div>`}).join('')}</div><button data-action="add-student" class="btn btn-outline w-full">+ Add student</button>`;
-}
-function renderStudentDetail(id){
-  const s=studentById(id); if(!s) return '';
-  const sessions=state.sessions.filter(x=>x.studentId===id).sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
-  const payments=state.payments.filter(x=>x.studentId===id).sort((a,b)=>b.date.localeCompare(a.date));
-  const bal=studentBalance(id);
-  const notes=s.generalNotes||[];
-  const unpaidSessions = sessions.filter(ss => ss.status==='completed' && studentBalance(id) > 0.01);
-  return `<div class="mb-5"><h2 class="serif text-[32px] leading-none mb-1">${s.name}</h2><p class="text-[15px] text-ink-soft">${fmtMoney(s.rate)}/hr${s.phone?' · '+s.phone:''}</p><div class="flex gap-2 mt-4"><button data-action="edit-student" data-id="${s.id}" class="btn btn-outline flex-1">Edit</button><button data-action="log-payment" data-id="${s.id}" class="btn flex-1">Log payment</button></div></div><div class="card mb-4 flex items-center justify-between"><span class="text-[15px] text-ink-soft">Balance</span><span class="serif text-[28px] tabular" style="color:${bal>0?'var(--danger)':'var(--ink)'};">${fmtMoney(bal)}</span></div>${unpaidSessions.length?`<div class="mb-4"><span class="text-[14px] text-ink-soft font-medium">Unpaid sessions (${unpaidSessions.length})</span><div class="space-y-2 mt-2">${unpaidSessions.slice(0,3).map(sessionRow).join('')}${unpaidSessions.length>3?`<p class="text-[13px] text-ink-soft">+${unpaidSessions.length-3} more</p>`:''}</div></div>`:''}<div class="mb-4"><div class="flex items-center justify-between mb-2"><span class="text-[14px] text-ink-soft font-medium">Notes</span><button data-action="add-note" data-id="${s.id}" class="press text-[15px] font-semibold">+ Add</button></div>${notes.length===0?`<p class="text-[15px] text-[#B4B3A6]">No notes.</p>`:`<div class="space-y-2">${notes.slice().reverse().map(n=>`<div class="card"><p class="text-[15px] leading-snug">${escapeHtml(n.text)}</p><p class="text-[12px] mt-1 text-ink-soft">${isoToDate(n.date).toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</p></div>`).join('')}</div>`}</div><div class="mb-4"><span class="text-[14px] text-ink-soft font-medium">Session history</span>${sessions.length===0?`<p class="text-[15px] text-[#B4B3A6] mt-2">No sessions.</p>`:`<div class="space-y-2 mt-2">${sessions.slice(0,5).map(sessionRow).join('')}${sessions.length>5?`<p class="text-[13px] text-ink-soft">+${sessions.length-5} more</p>`:''}</div>`}</div><div><span class="text-[14px] text-ink-soft font-medium">Payment history</span>${payments.length===0?`<p class="text-[15px] text-[#B4B3A6] mt-2">No payments.</p>`:`<div class="space-y-2 mt-2">${payments.slice(0,5).map(p=>`<div class="card flex items-center justify-between"><div><div class="text-[15px]">${p.method||'Payment'}</div><div class="text-[13px] mt-0.5 text-ink-soft">${isoToDate(p.date).toLocaleDateString('en-AU',{day:'numeric',month:'short'})}${p.note?' · '+escapeHtml(p.note):''}</div></div><div class="text-[16px] tabular font-medium">${fmtMoney(p.amount)}</div></div>`).join('')}${payments.length>5?`<p class="text-[13px] text-ink-soft">+${payments.length-5} more</p>`:''}</div>`}</div>`;
+function SessionRow({ data, session, onOpen }) {
+  const st = studentById(data, session.studentId);
+  if (!st) return null;
+  const done = session.status === 'completed';
+  const cancelled = session.status === 'cancelled';
+  const unpaid = session.status === 'completed' && studentBalance(data, session.studentId) > 0.01;
+
+  return (
+    <div onClick={onOpen} className="session-row press" style={{ opacity: cancelled ? 0.5 : 1 }}>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-baseline gap-2">
+          <span className="text-[17px] font-medium truncate">{st.name}</span>
+          {unpaid && <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: 'var(--danger)', color: 'white', fontWeight: 500 }}>unpaid</span>}
+          {session.isRecurring && <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: 'var(--ink-soft)', color: 'white' }}>recurring</span>}
+        </div>
+        <div className="text-[14px] mt-0.5 text-ink-soft">
+          {time12(session.time)} · {session.duration}min{cancelled ? ' · cancelled' : ''}
+        </div>
+      </div>
+      {done && <span className="text-[12px] px-3 py-1 rounded-full shrink-0" style={{ background: 'var(--ink)', color: 'white', fontWeight: 500 }}>Done</span>}
+    </div>
+  );
 }
 
-/* ---- payments ---- */
-function renderPayments(){
-  const owing=state.students.map(s=>({s, bal:studentBalance(s.id)})).filter(x=>x.bal>0.004).sort((a,b)=>b.bal-a.bal);
-  const allPayments=[...state.payments].sort((a,b)=>b.date.localeCompare(a.date));
-  const owingBlock=owing.length?`<div class="mb-4"><span class="text-[15px] text-ink-soft font-medium">Outstanding</span><div class="space-y-2 mt-2">${owing.map(({s,bal})=>`<div data-action="open-student" data-id="${s.id}" class="card flex items-center justify-between"><span class="text-[16px]">${s.name}</span><span class="text-[17px] tabular font-medium" style="color:var(--danger);">${fmtMoney(bal)}</span></div>`).join('')}</div></div>`:'';
-  const historyBlock=allPayments.length===0?emptyState('No payments','Log a payment','log-payment'):`<span class="text-[15px] text-ink-soft font-medium">History</span><div class="space-y-2 mt-2">${allPayments.slice(0,10).map(p=>{const s=studentById(p.studentId);return `<div class="card flex items-center justify-between"><div><div class="text-[15px]">${s?s.name:'Unknown'}</div><div class="text-[13px] mt-0.5 text-ink-soft">${isoToDate(p.date).toLocaleDateString('en-AU',{day:'numeric',month:'short'})}${p.method?' · '+p.method:''}</div></div><div class="text-[16px] tabular font-medium">${fmtMoney(p.amount)}</div></div>`}).join('')}${allPayments.length>10?`<p class="text-[13px] text-ink-soft">+${allPayments.length-10} more</p>`:''}</div>`;
-  return `${owingBlock}${historyBlock}${allPayments.length?`<button data-action="log-payment" class="btn btn-outline w-full mt-4">+ Log payment</button>`:''}`;
+function ModalWrapper({ title, children, onClose }) {
+  return (
+    <>
+      <div className="px-5 pt-4 pb-3 flex items-center justify-between sticky top-0" style={{ background: 'var(--paper)' }}>
+        <h2 className="serif text-[22px]">{title}</h2>
+        <button onClick={onClose} className="btn-close">×</button>
+      </div>
+      <div className="px-5 pb-6">{children}</div>
+    </>
+  );
 }
 
-/* ========== MODALS ========== */
-function openModal(html){
-  document.getElementById('modal-root').innerHTML = `<div data-action="modal-backdrop" class="fixed inset-0 z-30 flex items-end fade-enter" style="background:rgba(28,35,33,0.3);"><div class="modal-enter w-full max-w-md mx-auto rounded-t-3xl max-h-[90vh] overflow-y-auto" style="background:var(--paper);padding-bottom:env(safe-area-inset-bottom);">${html}</div></div>`;
-  attachModalHandlers();
-}
-function closeModal(){ document.getElementById('modal-root').innerHTML=''; }
-function modalShell(title, bodyHtml, footerHtml){ return `<div class="px-5 pt-4 pb-3 flex items-center justify-between sticky top-0" style="background:var(--paper);"><h2 class="serif text-[22px]">${title}</h2><button data-action="modal-close" class="btn-close">×</button></div><div class="px-5 pb-6">${bodyHtml}</div>${footerHtml||''}`; }
-function field(label, inputHtml){ return `<div class="mb-4"><label class="block text-[14px] mb-1.5 text-ink-soft font-medium">${label}</label>${inputHtml}</div>`; }
-
-function studentFormModal(existing){
-  const s=existing||{name:'',rate:'',phone:'',recurring:'none'};
-  openModal(modalShell(existing?'Edit student':'Add student', `<form id="student-form">${field('Name',`<input required name="name" value="${s.name}" placeholder="Student name" />`)}${field('Hourly rate',`<input required name="rate" type="number" step="0.01" min="0" value="${s.rate}" placeholder="0.00" />`)}${field('Recurring schedule',`<select name="recurring"><option value="none" ${s.recurring==='none'?'selected':''}>None (one-off)</option><option value="weekly" ${s.recurring==='weekly'?'selected':''}>Weekly</option><option value="fortnightly" ${s.recurring==='fortnightly'?'selected':''}>Fortnightly</option></select>`)}${field('Phone <span style="color:#B4B3A6;">(optional)</span>',`<input name="phone" value="${s.phone||''}" placeholder="04xx xxx xxx" />`)}<button type="submit" class="btn w-full mt-2">${existing?'Save changes':'Add student'}</button>${existing?`<button type="button" data-action="delete-student" data-id="${existing.id}" class="btn btn-danger w-full mt-2">Delete student</button>`:''}</form>`));
-  document.getElementById('student-form').addEventListener('submit',(e)=>{ e.preventDefault(); const fd=new FormData(e.target); const data={name:fd.get('name').trim(),rate:parseFloat(fd.get('rate'))||0,phone:fd.get('phone').trim(),recurring:fd.get('recurring')}; if(existing){ Object.assign(existing,data); } else { state.students.push({id:uid(),generalNotes:[],...data}); } saveData(); closeModal(); render(); });
+function Field({ label, children }) {
+  return (
+    <div className="mb-4">
+      <label className="block text-[14px] mb-1.5 text-ink-soft font-medium">{label}</label>
+      {children}
+    </div>
+  );
 }
 
-function sessionFormModal(existing){
-  if(!state.students.length){ studentFormModal(null); return; }
-  const s=existing||{studentId:state.students[0].id,date:todayISO(),time:'15:00',duration:60,status:'scheduled'};
-  openModal(modalShell(existing?'Edit session':'Add session', `<form id="session-form">${field('Student',`<select name="studentId">${state.students.map(st=>`<option value="${st.id}" ${s.studentId===st.id?'selected':''}>${st.name}</option>`).join('')}</select>`)}<div class="grid grid-cols-2 gap-3">${field('Date',`<input required name="date" type="date" value="${s.date}" />`)}${field('Time',`<input required name="time" type="time" value="${s.time}" />`)}</div>${field('Duration (minutes)',`<input required name="duration" type="number" min="5" step="5" value="${s.duration}" />`)}<button type="submit" class="btn w-full mt-2">${existing?'Save changes':'Add session'}</button></form>`));
-  document.getElementById('session-form').addEventListener('submit',(e)=>{ e.preventDefault(); const fd=new FormData(e.target); const data={studentId:fd.get('studentId'),date:fd.get('date'),time:fd.get('time'),duration:parseInt(fd.get('duration'),10)}; if(existing){ Object.assign(existing,data); } else { state.sessions.push({id:uid(),status:'scheduled',note:'',...data}); } saveData(); closeModal(); render(); });
+function AddStudentModal({ student, onAdd, onClose }) {
+  const [name, setName] = useState(student?.name || '');
+  const [rate, setRate] = useState(student?.rate || '');
+  const [phone, setPhone] = useState(student?.phone || '');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!name.trim() || !rate) return;
+    const data = { name: name.trim(), rate: parseFloat(rate), phone: phone.trim() };
+    if (student) {
+      onAdd(student.id, data);
+    } else {
+      onAdd(data);
+    }
+    onClose();
+  };
+
+  return (
+    <ModalWrapper title={student ? 'Edit student' : 'Add student'} onClose={onClose}>
+      <form onSubmit={handleSubmit}>
+        <Field label="Name">
+          <input required value={name} onChange={e => setName(e.target.value)} placeholder="Student name" />
+        </Field>
+        <Field label="Hourly rate">
+          <input required type="number" step="0.01" min="0" value={rate} onChange={e => setRate(e.target.value)} placeholder="0.00" />
+        </Field>
+        <Field label="Phone (optional)">
+          <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="04xx xxx xxx" />
+        </Field>
+        <button type="submit" className="btn w-full mt-2">{student ? 'Save changes' : 'Add student'}</button>
+        {student && (
+          <button type="button" onClick={() => { if (confirm('Delete this student?')) { onAdd(student.id, null); onClose(); } }} 
+            className="btn btn-danger w-full mt-2">Delete student</button>
+        )}
+      </form>
+    </ModalWrapper>
+  );
 }
 
-function sessionActionsModal(session){
-  const st=studentById(session.studentId);
-  const isUnpaid = session.status==='completed' && studentBalance(session.studentId) > 0.01;
-  openModal(modalShell(st?st.name:'Session', `<p class="text-[15px] mb-4 text-ink-soft">${time12(session.time)} · ${session.duration}min${isUnpaid?' · <span style="color:var(--danger);font-weight:500;">unpaid</span>':''}</p><div class="grid grid-cols-2 gap-2 mb-4"><button data-action="mark-session" data-status="completed" data-id="${session.id}" class="btn" style="background:var(--ink);">Mark completed</button><button data-action="mark-session" data-status="cancelled" data-id="${session.id}" class="btn btn-outline">Mark cancelled</button></div>${field('Note',`<textarea name="note" rows="2" placeholder="What did you cover?">${session.note||''}</textarea>`)}<button data-action="save-session-note" data-id="${session.id}" class="btn btn-outline w-full mb-2">Save note</button><div class="flex gap-2"><button data-action="edit-session" data-id="${session.id}" class="btn flex-1">Edit</button><button data-action="delete-session" data-id="${session.id}" class="btn btn-danger flex-1">Delete</button></div>`));
+function AddSessionModal({ data, session, onAdd, onClose }) {
+  if (!data.students.length) {
+    return (
+      <ModalWrapper title="No students" onClose={onClose}>
+        <p className="text-[15px] mb-4">Add a student first before creating sessions.</p>
+        <button onClick={onClose} className="btn w-full">Close</button>
+      </ModalWrapper>
+    );
+  }
+
+  const [studentId, setStudentId] = useState(session?.studentId || data.students[0]?.id || '');
+  const [date, setDate] = useState(session?.date || todayISO());
+  const [time, setTime] = useState(session?.time || '15:00');
+  const [duration, setDuration] = useState(session?.duration || 60);
+  const [recurring, setRecurring] = useState(session?.recurring || 'none');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!studentId) return;
+    const data = { studentId, date, time, duration: parseInt(duration), recurring };
+    onAdd(data);
+    onClose();
+  };
+
+  return (
+    <ModalWrapper title={session ? 'Edit session' : 'Add session'} onClose={onClose}>
+      <form onSubmit={handleSubmit}>
+        <Field label="Student">
+          <select value={studentId} onChange={e => setStudentId(e.target.value)}>
+            {data.students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Date">
+            <input required type="date" value={date} onChange={e => setDate(e.target.value)} />
+          </Field>
+          <Field label="Time">
+            <input required type="time" value={time} onChange={e => setTime(e.target.value)} />
+          </Field>
+        </div>
+        <Field label="Duration (minutes)">
+          <input required type="number" min="5" step="5" value={duration} onChange={e => setDuration(e.target.value)} />
+        </Field>
+        <Field label="Repeat">
+          <select value={recurring} onChange={e => setRecurring(e.target.value)}>
+            <option value="none">Never (one-off)</option>
+            <option value="weekly">Weekly</option>
+            <option value="fortnightly">Fortnightly</option>
+          </select>
+        </Field>
+        <button type="submit" className="btn w-full mt-2">{session ? 'Save changes' : 'Add session'}</button>
+      </form>
+    </ModalWrapper>
+  );
 }
 
-function paymentFormModal(studentId){
-  if(!state.students.length){ studentFormModal(null); return; }
-  const initial=studentId||state.students[0].id;
-  const bal=Math.max(0,studentBalance(initial));
-  openModal(modalShell('Log payment', `<form id="payment-form">${field('Student',`<select name="studentId" id="pay-student">${state.students.map(st=>`<option value="${st.id}" ${st.id===initial?'selected':''}>${st.name}</option>`).join('')}</select>`)}${field('Amount',`<input required id="pay-amount" name="amount" type="number" step="0.01" min="0" value="${bal>0?bal.toFixed(2):''}" placeholder="0.00" />`)}${field('Date',`<input required name="date" type="date" value="${todayISO()}" />`)}${field('Method <span style="color:#B4B3A6;">(optional)</span>',`<select name="method"><option value="">Not specified</option><option>Bank transfer</option><option>Cash</option><option>Card</option><option>Other</option></select>`)}${field('Note <span style="color:#B4B3A6;">(optional)</span>',`<input name="note" placeholder="e.g. covers 3 sessions" />`)}<button type="submit" class="btn w-full mt-2">Log payment</button></form>`));
-  document.getElementById('pay-student').addEventListener('change',(e)=>{ const b=Math.max(0,studentBalance(e.target.value)); document.getElementById('pay-amount').value=b>0?b.toFixed(2):''; });
-  document.getElementById('payment-form').addEventListener('submit',(e)=>{ e.preventDefault(); const fd=new FormData(e.target); state.payments.push({id:uid(),studentId:fd.get('studentId'),amount:parseFloat(fd.get('amount'))||0,date:fd.get('date'),method:fd.get('method'),note:fd.get('note').trim()}); saveData(); closeModal(); render(); });
+function SessionModal({ data, session, onUpdate, onDelete, onClose }) {
+  const st = studentById(data, session.studentId);
+  const unpaid = session.status === 'completed' && studentBalance(data, session.studentId) > 0.01;
+  const [note, setNote] = useState(session.note || '');
+
+  return (
+    <ModalWrapper title={st ? st.name : 'Session'} onClose={onClose}>
+      <p className="text-[15px] mb-4 text-ink-soft">
+        {time12(session.time)} · {session.duration}min
+        {unpaid && <span className="ml-2" style={{ color: 'var(--danger)', fontWeight: 500 }}>· unpaid</span>}
+        {session.isRecurring && <span className="ml-2" style={{ color: 'var(--ink-soft)' }}>· recurring</span>}
+      </p>
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        <button onClick={() => { onUpdate(session.id, { status: 'completed' }); onClose(); }} 
+          className="btn" style={{ background: 'var(--ink)' }}>Mark completed</button>
+        <button onClick={() => { onUpdate(session.id, { status: 'cancelled' }); onClose(); }} 
+          className="btn btn-outline">Mark cancelled</button>
+      </div>
+      <Field label="Note">
+        <textarea rows="2" value={note} onChange={e => setNote(e.target.value)} placeholder="What did you cover?" />
+      </Field>
+      <button onClick={() => { onUpdate(session.id, { note: note.trim() }); onClose(); }} 
+        className="btn btn-outline w-full mb-2">Save note</button>
+      <div className="flex gap-2">
+        <button onClick={() => { onClose(); }} className="btn flex-1">Close</button>
+        <button onClick={() => { onDelete(session.id); onClose(); }} className="btn btn-danger flex-1">Delete</button>
+      </div>
+    </ModalWrapper>
+  );
 }
 
-function noteFormModal(studentId){
-  const s=studentById(studentId); if(!s) return;
-  openModal(modalShell('Add note', `<form id="note-form">${field(s.name,`<textarea required name="text" rows="4" placeholder="Progress, reminders..."></textarea>`)}<button type="submit" class="btn w-full mt-2">Save note</button></form>`));
-  document.getElementById('note-form').addEventListener('submit',(e)=>{ e.preventDefault(); const fd=new FormData(e.target); s.generalNotes=s.generalNotes||[]; s.generalNotes.push({id:uid(),date:todayISO(),text:fd.get('text').trim()}); saveData(); closeModal(); render(); });
+function AddPaymentModal({ data, studentId, onAdd, onClose }) {
+  if (!data.students.length) {
+    return (
+      <ModalWrapper title="No students" onClose={onClose}>
+        <p className="text-[15px] mb-4">Add a student first before logging payments.</p>
+        <button onClick={onClose} className="btn w-full">Close</button>
+      </ModalWrapper>
+    );
+  }
+
+  const [sid, setSid] = useState(studentId || data.students[0]?.id || '');
+  const [amount, setAmount] = useState('');
+  const [date, setDate] = useState(todayISO());
+  const [method, setMethod] = useState('');
+  const [note, setNote] = useState('');
+
+  useEffect(() => {
+    if (sid) {
+      const bal = Math.max(0, studentBalance(data, sid));
+      if (bal > 0 && !amount) setAmount(bal.toFixed(2));
+    }
+  }, [sid]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!sid || !amount) return;
+    onAdd({ studentId: sid, amount: parseFloat(amount), date, method, note: note.trim() });
+    onClose();
+  };
+
+  return (
+    <ModalWrapper title="Log payment" onClose={onClose}>
+      <form onSubmit={handleSubmit}>
+        <Field label="Student">
+          <select value={sid} onChange={e => setSid(e.target.value)}>
+            {data.students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        </Field>
+        <Field label="Amount">
+          <input required type="number" step="0.01" min="0" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" />
+        </Field>
+        <Field label="Date">
+          <input required type="date" value={date} onChange={e => setDate(e.target.value)} />
+        </Field>
+        <Field label="Method (optional)">
+          <select value={method} onChange={e => setMethod(e.target.value)}>
+            <option value="">Not specified</option>
+            <option>Bank transfer</option>
+            <option>Cash</option>
+            <option>Card</option>
+            <option>Other</option>
+          </select>
+        </Field>
+        <Field label="Note (optional)">
+          <input value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. covers 3 sessions" />
+        </Field>
+        <button type="submit" className="btn w-full mt-2">Log payment</button>
+      </form>
+    </ModalWrapper>
+  );
 }
 
-/* ========== HANDLERS ========== */
-function attachModalHandlers(){
-  const root=document.getElementById('modal-root');
-  root.querySelectorAll('[data-action="modal-close"]').forEach(b=>b.addEventListener('click',closeModal));
-  root.querySelector('[data-action="modal-backdrop"]')?.addEventListener('click',(e)=>{ if(e.target===e.currentTarget) closeModal(); });
-  root.querySelectorAll('[data-action="mark-session"]').forEach(b=>b.addEventListener('click',()=>{ const sess=state.sessions.find(s=>s.id===b.dataset.id); if(sess){ sess.status=b.dataset.status; saveData(); closeModal(); render(); } }));
-  root.querySelectorAll('[data-action="save-session-note"]').forEach(b=>b.addEventListener('click',()=>{ const sess=state.sessions.find(s=>s.id===b.dataset.id); const ta=root.querySelector('textarea[name="note"]'); if(sess){ sess.note=ta.value.trim(); saveData(); closeModal(); render(); } }));
-  root.querySelectorAll('[data-action="edit-session"]').forEach(b=>b.addEventListener('click',()=>{ const sess=state.sessions.find(s=>s.id===b.dataset.id); if(sess) sessionFormModal(sess); }));
-  root.querySelectorAll('[data-action="delete-session"]').forEach(b=>b.addEventListener('click',()=>{ if(confirm('Delete this session?')){ state.sessions=state.sessions.filter(s=>s.id!==b.dataset.id); saveData(); closeModal(); render(); } }));
-  root.querySelectorAll('[data-action="delete-student"]').forEach(b=>b.addEventListener('click',()=>{ if(confirm('Delete this student and all their data?')){ const id=b.dataset.id; state.students=state.students.filter(s=>s.id!==id); state.sessions=state.sessions.filter(s=>s.studentId!==id); state.payments=state.payments.filter(p=>p.studentId!==id); saveData(); closeModal(); view='students'; render(); } }));
-}
-function attachHandlers(){
-  const app=document.getElementById('app');
-  app.querySelectorAll('[data-action="nav"]').forEach(el=>el.addEventListener('click',()=>{ view=el.dataset.view; weekOffset=0; render(); }));
-  app.querySelector('[data-action="back-students"]')?.addEventListener('click',()=>{ view='students'; openStudentId=null; render(); });
-  app.querySelectorAll('[data-action="open-student"]').forEach(el=>el.addEventListener('click',()=>{ openStudentId=el.dataset.id; view='student'; render(); }));
-  app.querySelectorAll('[data-action="open-session"]').forEach(el=>el.addEventListener('click',()=>{ const sess=state.sessions.find(s=>s.id===el.dataset.id); if(sess) sessionActionsModal(sess); }));
-  app.querySelectorAll('[data-action="add-student"]').forEach(el=>el.addEventListener('click',()=>studentFormModal(null)));
-  app.querySelectorAll('[data-action="edit-student"]').forEach(el=>el.addEventListener('click',()=>studentFormModal(studentById(el.dataset.id))));
-  app.querySelectorAll('[data-action="add-session"]').forEach(el=>el.addEventListener('click',()=>sessionFormModal(null)));
-  app.querySelectorAll('[data-action="log-payment"]').forEach(el=>el.addEventListener('click',()=>paymentFormModal(el.dataset.id)));
-  app.querySelectorAll('[data-action="add-note"]').forEach(el=>el.addEventListener('click',()=>noteFormModal(el.dataset.id)));
-  app.querySelector('[data-action="week-prev"]')?.addEventListener('click',()=>{ weekOffset--; render(); });
-  app.querySelector('[data-action="week-next"]')?.addEventListener('click',()=>{ weekOffset++; render(); });
+function AddNoteModal({ studentId, onAdd, onClose }) {
+  const [text, setText] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!text.trim()) return;
+    onAdd(studentId, text.trim());
+    onClose();
+  };
+
+  return (
+    <ModalWrapper title="Add note" onClose={onClose}>
+      <form onSubmit={handleSubmit}>
+        <Field label="Note">
+          <textarea required rows="4" value={text} onChange={e => setText(e.target.value)} placeholder="Progress, reminders..." />
+        </Field>
+        <button type="submit" className="btn w-full mt-2">Save note</button>
+      </form>
+    </ModalWrapper>
+  );
 }
 
-loadData();
-if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
+// ========== BOOT ==========
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>
 </body>
 </html>
