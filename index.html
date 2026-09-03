@@ -447,18 +447,29 @@ function renderTabBar(){
 }
 
 /* ============================= TODAY ============================= */
+/* ============================= TODAY ============================= */
 function renderToday(){
   const today = todayISO();
   const sessions = state.sessions.filter(s => s.date === today).sort((a,b) => a.time.localeCompare(b.time));
   const outstanding = totalOutstanding();
   const hrs = hoursThisWeek();
+  
+  // Calculate total earned (all completed sessions)
+  const totalEarned = state.sessions
+    .filter(s => s.status === 'completed')
+    .reduce((sum, s) => sum + sessionCost(s), 0);
 
   const stats = `
     <div class="stat-grid">
       <div class="stat-item"><div class="stat-value">${sessions.length}</div><div class="stat-label">sessions today</div></div>
-      <div class="stat-item"><div class="stat-value">${hrs.toFixed(1)}</div><div class="stat-label">hrs this week</div></div>
+      <div class="stat-item"><div class="stat-value" style="color:var(--accent);">${fmtMoney(totalEarned)}</div><div class="stat-label">total earned</div></div>
       <div class="stat-item"><div class="stat-value" style="color:${outstanding>0?'var(--danger)':'var(--ink)'};">${fmtMoney(outstanding)}</div><div class="stat-label">owed to you</div></div>
-    </div>`;
+    </div>
+    <div class="stat-grid" style="grid-template-columns: 1fr 1fr; gap: 12px; margin-top: -8px;">
+      <div class="stat-item"><div class="stat-value">${hrs.toFixed(1)}</div><div class="stat-label">hrs this week</div></div>
+      <div class="stat-item"><div class="stat-value">${state.students.length}</div><div class="stat-label">students</div></div>
+    </div>
+  `;
 
   const list = sessions.length === 0
     ? `<div class="empty-state"><p class="serif text-lg">Nothing scheduled today</p><p class="text-sm text-soft mt-1">Add a session to get your day on the ledger.</p><button data-action="add-session" class="btn-primary mt-3">+ Add session</button></div>`
