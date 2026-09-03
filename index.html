@@ -399,15 +399,16 @@ function render(){
   // header
   header.innerHTML = renderHeader();
 
-// body - force clear and replace
+  // body - using replaceChildren for cleaner replacement
   const body = view === 'student' ? renderStudentDetail(openStudentId)
     : view === 'schedule' ? renderSchedule()
     : view === 'students' ? renderStudents()
     : view === 'payments' ? renderPayments()
     : renderToday();
-  // Clear and set new content
-  container.innerHTML = '';
-  container.innerHTML = `<div class="fade-enter">${body}</div>`;
+  const wrapper = document.createElement('div');
+  wrapper.className = 'fade-enter';
+  wrapper.innerHTML = body;
+  container.replaceChildren(wrapper);
   container.scrollTop = 0;
 
   // nav
