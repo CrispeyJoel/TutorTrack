@@ -1,17 +1,15 @@
 {
-  "name": "Ledger — Teaching Schedule",
+  "name": "Ledger",
   "short_name": "Ledger",
-  "description": "Track your tutoring and piano schedule, students, payments and notes.",
-  "start_url": ".",
-  "scope": ".",
+  "description": "A simple teaching schedule, student and payment manager.",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#F1F0EA",
-  "theme_color": "#F1F0EA",
+  "background_color": "#F5F5F2",
+  "theme_color": "#F5F5F2",
   "orientation": "portrait",
-  "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  "categories": [
+    "productivity",
+    "education"
   ]
 }
